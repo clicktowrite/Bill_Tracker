@@ -1,0 +1,534 @@
+package com.example.billtracker.ui.tenants
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ElectricBolt
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.example.billtracker.domain.formatter.CurrencyFormatter
+import com.example.billtracker.domain.formatter.ReadingFormatter
+import com.example.billtracker.domain.model.RateType
+import com.example.billtracker.domain.model.UtilityType
+import com.example.billtracker.ui.meters.ReadingStatusBadge
+import com.example.billtracker.ui.theme.ElectricityYellow
+import com.example.billtracker.ui.theme.WaterBlue
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TenantDetailScreen(
+    uiState: TenantDetailUiState,
+    onEditTenantClick: (Long) -> Unit,
+    onCalculateMeterBillClick: (Long) -> Unit,
+    onDailyLogClick: (Long) -> Unit,
+    onBillClick: (Long) -> Unit,
+    onTogglePaymentStatus: (Long, Boolean) -> Unit,
+    onBackClick: () -> Unit
+) {
+    val tenant = uiState.tenant
+    val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
+    val shortDateFormatter = remember { SimpleDateFormat("MM/dd/yyyy", Locale.getDefault()) }
+    val dateTimeFormatter = remember { SimpleDateFormat("MMM dd, yyyy • hh:mm a", Locale.getDefault()) }
+
+    var expandedBillIds by remember { mutableStateOf(setOf<Long>()) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            text = "Utilities Tracker",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = tenant?.name ?: "Profile Details",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                actions = {
+                    tenant?.let {
+                        IconButton(onClick = { onEditTenantClick(it.id) }) {
+                            Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit Profile")
+                        }
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        if (tenant == null) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("Profile not found.")
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item { Spacer(modifier = Modifier.height(4.dp)) }
+
+                // Tenant / Profile Summary Card
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.extraLarge,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Text(
+                                text = "Room / Unit: ${tenant.roomOrUnit}",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = tenant.name,
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            if (!tenant.notes.isNullOrBlank()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = tenant.notes,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f))
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text(
+                                text = "Total Due",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = CurrencyFormatter.format(uiState.totalDue, uiState.currencySymbol),
+                                style = MaterialTheme.typography.displaySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.ElectricBolt,
+                                        contentDescription = null,
+                                        tint = ElectricityYellow
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Electricity: ${CurrencyFormatter.format(uiState.latestElectricityBill, uiState.currencySymbol)}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.WaterDrop,
+                                        contentDescription = null,
+                                        tint = WaterBlue
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Water: ${CurrencyFormatter.format(uiState.latestWaterBill, uiState.currencySymbol)}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Assigned Active Meters Section
+                item {
+                    Text(
+                        text = "Assigned Meters",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                if (uiState.meters.isEmpty()) {
+                    item {
+                        Text(
+                            text = "No active meters assigned to this profile.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    items(uiState.meters, key = { it.meter.id }) { item ->
+                        val isElec = item.meter.utilityType == UtilityType.ELECTRICITY
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.large
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(
+                                        imageVector = if (isElec) Icons.Default.ElectricBolt else Icons.Default.WaterDrop,
+                                        contentDescription = null,
+                                        tint = if (isElec) ElectricityYellow else WaterBlue
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = item.meter.name,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Current Reading: ${ReadingFormatter.formatReading(item.meter.currentReading, item.meter.utilityType)}",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Button(
+                                        onClick = { onCalculateMeterBillClick(item.meter.id) },
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(imageVector = Icons.Default.Calculate, contentDescription = null)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Calculate Bill")
+                                    }
+
+                                    OutlinedButton(
+                                        onClick = { onDailyLogClick(item.meter.id) },
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(imageVector = Icons.Default.Speed, contentDescription = null)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Daily Log")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Bill History Section (Organized by Authoritative Billing Cycle Dates)
+                item {
+                    Text(
+                        text = "Bill History",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+
+                if (uiState.readingsHistory.isEmpty()) {
+                    item {
+                        Text(
+                            text = "No finalized bills recorded for this profile yet.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    items(uiState.readingsHistory, key = { it.reading.id }) { historyModel ->
+                        val reading = historyModel.reading
+                        val isExpanded = expandedBillIds.contains(reading.id)
+
+                        // Authoritative billing cycle date range (First Reading Date -> Last Reading Date)
+                        val cycleRangeText = "${shortDateFormatter.format(Date(historyModel.cycleStartDateMillis))} – ${shortDateFormatter.format(Date(historyModel.cycleEndDateMillis))}"
+                        val unit = if (historyModel.utilityType == UtilityType.WATER) "m³" else "kWh"
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onDailyLogClick(reading.meterId)
+                                },
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                // Collapsed Header Row
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = cycleRangeText,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            text = "${historyModel.meterName} • ${CurrencyFormatter.format(reading.totalAmount, uiState.currencySymbol)}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+
+                                    // Paid / Unpaid Status Badge Toggle
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(
+                                                if (reading.isPaid) Color(0xFF2E7D32).copy(alpha = 0.15f)
+                                                else MaterialTheme.colorScheme.errorContainer
+                                            )
+                                            .clickable {
+                                                onTogglePaymentStatus(reading.id, !reading.isPaid)
+                                            }
+                                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = if (reading.isPaid) Icons.Default.CheckCircle else Icons.Default.HourglassEmpty,
+                                                contentDescription = if (reading.isPaid) "Paid" else "Unpaid",
+                                                tint = if (reading.isPaid) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.height(14.dp).width(14.dp)
+                                            )
+                                            Text(
+                                                text = if (reading.isPaid) "PAID" else "UNPAID",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (reading.isPaid) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                    }
+
+                                    IconButton(
+                                        onClick = {
+                                            expandedBillIds = if (isExpanded) {
+                                                expandedBillIds - reading.id
+                                            } else {
+                                                expandedBillIds + reading.id
+                                            }
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                            contentDescription = if (isExpanded) "Collapse Details" else "Expand Details"
+                                        )
+                                    }
+                                }
+
+                                // Expanded Bill Computation & Visually Distinct Historical Daily Log
+                                if (isExpanded) {
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    HorizontalDivider()
+                                    Spacer(modifier = Modifier.height(10.dp))
+
+                                    Text(
+                                        text = "Bill Computation",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("Previous Reading:", style = MaterialTheme.typography.bodyMedium)
+                                        Text("${reading.previousReading} $unit", fontWeight = FontWeight.Bold)
+                                    }
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("New Reading:", style = MaterialTheme.typography.bodyMedium)
+                                        Text("${reading.currentReading} $unit", fontWeight = FontWeight.Bold)
+                                    }
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("Consumption:", style = MaterialTheme.typography.bodyMedium)
+                                        Text("${reading.usage} $unit", fontWeight = FontWeight.Bold)
+                                    }
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("Rate:", style = MaterialTheme.typography.bodyMedium)
+                                        Text(
+                                            if (reading.rateType == RateType.FIXED)
+                                                "${uiState.currencySymbol}${reading.rate} / $unit (Fixed)"
+                                            else
+                                                "${uiState.currencySymbol}${reading.rate} / $unit (Dynamic)",
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = "Calculation: ${reading.usage} $unit × ${uiState.currencySymbol}${reading.rate} = ${CurrencyFormatter.format(reading.totalAmount, uiState.currencySymbol)}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+
+                                    // Visually Distinct Daily Log History Container for this Billing Cycle
+                                    if (historyModel.cycleLogs.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = MaterialTheme.shapes.medium,
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                            )
+                                        ) {
+                                            Column(modifier = Modifier.padding(12.dp)) {
+                                                Text(
+                                                    text = "Daily Log History for This Billing Cycle",
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                                Spacer(modifier = Modifier.height(6.dp))
+
+                                                historyModel.cycleLogs.forEach { logItem ->
+                                                    val dateStr = if (logItem.reading.hasTime) dateTimeFormatter.format(Date(logItem.reading.dateMillis)) else dateFormatter.format(Date(logItem.reading.dateMillis))
+                                                    val valStr = logItem.reading.readingValue?.let { "$it $unit" } ?: "--"
+                                                    val consStr = logItem.reading.dailyConsumption?.let { "+$it $unit" } ?: "N/A"
+
+                                                    Row(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(vertical = 4.dp),
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Column {
+                                                            Text(valStr, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                                                            Text(dateStr, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                        }
+
+                                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                                            Text(consStr, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                            Spacer(modifier = Modifier.width(6.dp))
+                                                            ReadingStatusBadge(status = logItem.reading.status)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    OutlinedButton(
+                                        onClick = { onBillClick(reading.id) },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Icon(imageVector = Icons.AutoMirrored.Filled.ReceiptLong, contentDescription = null)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("View Full Statement")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                item { Spacer(modifier = Modifier.height(32.dp)) }
+            }
+        }
+    }
+}

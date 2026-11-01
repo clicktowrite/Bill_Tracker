@@ -1,0 +1,474 @@
+package com.example.billtracker.ui.settings
+
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import com.example.billtracker.BillTrackerApp
+import com.example.billtracker.data.backup.BackupRestoreManager
+import com.example.billtracker.data.backup.BackupValidationResult
+import com.example.billtracker.domain.model.ThemeMode
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(
+    uiState: SettingsUiState,
+    onThemeSelect: (ThemeMode) -> Unit,
+    onCurrencySelect: (String) -> Unit,
+    onRecordReadingTimeToggle: (Boolean) -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val app = context.applicationContext as BillTrackerApp
+    val currencies = listOf("₱", "$", "€", "£", "¥", "₹", "RM", "S$")
+
+    var pendingRestoreValidation by remember { mutableStateOf<BackupValidationResult?>(null) }
+
+    // SAF Launchers
+    val createBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let {
+            scope.launch {
+                val success = BackupRestoreManager.createBackup(context, app.database, uri)
+                if (success) {
+                    Toast.makeText(context, "Backup created successfully!", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(context, "Failed to create backup.", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    val restoreBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            scope.launch {
+                val result = BackupRestoreManager.validateBackup(context, uri)
+                if (result.isValid) {
+                    pendingRestoreValidation = result
+                } else {
+                    Toast.makeText(context, result.errorMessage ?: "Invalid backup file.", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Settings",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            // Theme Setting
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Palette,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.padding(4.dp))
+                        Text(
+                            text = "Appearance Theme",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onThemeSelect(ThemeMode.SYSTEM) }
+                    ) {
+                        RadioButton(
+                            selected = uiState.themeMode == ThemeMode.SYSTEM,
+                            onClick = { onThemeSelect(ThemeMode.SYSTEM) }
+                        )
+                        Text("Follow System")
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onThemeSelect(ThemeMode.LIGHT) }
+                    ) {
+                        RadioButton(
+                            selected = uiState.themeMode == ThemeMode.LIGHT,
+                            onClick = { onThemeSelect(ThemeMode.LIGHT) }
+                        )
+                        Text("Light Mode")
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onThemeSelect(ThemeMode.DARK) }
+                    ) {
+                        RadioButton(
+                            selected = uiState.themeMode == ThemeMode.DARK,
+                            onClick = { onThemeSelect(ThemeMode.DARK) }
+                        )
+                        Text("Dark Mode")
+                    }
+                }
+            }
+
+            // Record Reading Time Toggle Setting
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AccessTime,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Record Reading Time",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Include exact time along with dates for meter readings",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Switch(
+                        checked = uiState.recordReadingTime,
+                        onCheckedChange = onRecordReadingTimeToggle
+                    )
+                }
+            }
+
+            // Currency Setting
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.AttachMoney,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.padding(4.dp))
+                        Text(
+                            text = "Currency Symbol",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        currencies.take(4).forEach { symbol ->
+                            Card(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { onCurrencySelect(symbol) },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (uiState.currencySymbol == symbol)
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    else MaterialTheme.colorScheme.surfaceVariant
+                                )
+                            ) {
+                                Text(
+                                    text = symbol,
+                                    modifier = Modifier
+                                        .padding(vertical = 12.dp)
+                                        .fillMaxWidth(),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        currencies.drop(4).forEach { symbol ->
+                            Card(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { onCurrencySelect(symbol) },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (uiState.currencySymbol == symbol)
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    else MaterialTheme.colorScheme.surfaceVariant
+                                )
+                            ) {
+                                Text(
+                                    text = symbol,
+                                    modifier = Modifier
+                                        .padding(vertical = 12.dp)
+                                        .fillMaxWidth(),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedTextField(
+                        value = uiState.currencySymbol,
+                        onValueChange = onCurrencySelect,
+                        label = { Text("Custom Currency Symbol") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+            }
+
+            // Backup & Restore Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Backup,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.padding(4.dp))
+                        Text(
+                            text = "Backup and Restore",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Safely export or restore your utility billing database offline.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                createBackupLauncher.launch("BillTracker_Backup_${System.currentTimeMillis()}.json")
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(imageVector = Icons.Default.Backup, contentDescription = null)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Create Backup")
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                restoreBackupLauncher.launch(arrayOf("application/json", "*/*"))
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(imageVector = Icons.Default.Restore, contentDescription = null)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Restore")
+                        }
+                    }
+                }
+            }
+
+            // About App Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.padding(4.dp))
+                        Text(
+                            text = "About Bill Tracker",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Smart offline utility billing management app designed for renters, landlords, boarding houses, and apartments.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    ListItem(
+                        headlineContent = { Text("Version") },
+                        supportingContent = { Text("2.1.0 (Live Forecasts & Timestamps)") }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+
+    // Restore Confirmation Modal Dialog
+    pendingRestoreValidation?.let { valResult ->
+        AlertDialog(
+            onDismissRequest = { pendingRestoreValidation = null },
+            title = { Text("Confirm Database Restore", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("The selected backup file was verified successfully. It contains:")
+                    Text("• ${valResult.tenantCount} Renters / Tenants")
+                    Text("• ${valResult.meterCount} Electricity/Water Meters")
+                    Text("• ${valResult.readingCount} Billing History Records")
+                    Text("• ${valResult.paymentCount} Payment Records")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Warning: Restoring will overwrite current database records with the backup. Do you want to proceed?",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val json = valResult.jsonContent
+                        pendingRestoreValidation = null
+                        if (json != null) {
+                            scope.launch {
+                                val success = BackupRestoreManager.restoreFromValidatedBackup(app.database, json)
+                                if (success) {
+                                    Toast.makeText(context, "Database restored successfully!", Toast.LENGTH_LONG).show()
+                                } else {
+                                    Toast.makeText(context, "Restoration failed.", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        }
+                    }
+                ) {
+                    Text("Proceed Restore")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingRestoreValidation = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
