@@ -143,4 +143,40 @@ class DailyInterpolationEngineTest {
         assertEquals(BigDecimal("115.00"), result[3].readingValue)
         assertEquals(BigDecimal("120.00"), result[4].readingValue)
     }
+
+    @Test
+    fun readingsListKeys_areUniqueEvenWithMultipleReadingsOnSameDay() {
+        val now = 1696118400000L
+        val reading1 = InputReading(id = 1, timestamp = now, value = "100.0", hasTime = false)
+        val reading2 = InputReading(id = 2, timestamp = now, value = "105.0", hasTime = false)
+
+        // Simulate how DailyReadingsViewModel generates actuals when isForecastEnabled is false or true
+        val actuals = listOf(
+            com.example.billtracker.domain.calculator.InterpolatedDailyReading(
+                dateMillis = reading1.timestamp,
+                readingValue = BigDecimal("100.00"),
+                status = ReadingStatus.ACTUAL,
+                dailyConsumption = null,
+                actualReadingId = reading1.id
+            ),
+            com.example.billtracker.domain.calculator.InterpolatedDailyReading(
+                dateMillis = reading2.timestamp,
+                readingValue = BigDecimal("105.00"),
+                status = ReadingStatus.ACTUAL,
+                dailyConsumption = BigDecimal("5.00"),
+                actualReadingId = reading2.id
+            )
+        )
+
+        val keys = actuals.mapIndexed { index, item ->
+            if (item.actualReadingId != null) {
+                "actual_${item.actualReadingId}_${item.dateMillis}"
+            } else {
+                "${item.status.name}_${item.dateMillis}_$index"
+            }
+        }
+
+        // Must not contain duplicate keys
+        assertEquals(2, keys.toSet().size)
+    }
 }
