@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Delete
@@ -150,28 +151,38 @@ fun MeterCard(
                 Button(
                     onClick = onCalculateClick,
                     modifier = Modifier.weight(1f),
-                    shape = MaterialTheme.shapes.medium
+                    shape = MaterialTheme.shapes.medium,
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Calculate,
                         contentDescription = null
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(text = "Calculate Bill")
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Calculate Bill",
+                        maxLines = 1,
+                        softWrap = false
+                    )
                 }
 
                 if (onDailyLogClick != null) {
                     OutlinedButton(
                         onClick = onDailyLogClick,
                         modifier = Modifier.weight(1f),
-                        shape = MaterialTheme.shapes.medium
+                        shape = MaterialTheme.shapes.medium,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Speed,
                             contentDescription = null
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(text = "Daily Log")
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Daily Log",
+                            maxLines = 1,
+                            softWrap = false
+                        )
                     }
                 }
             }
