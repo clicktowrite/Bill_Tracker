@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -302,20 +303,30 @@ fun TenantDetailScreen(
                                 ) {
                                     Button(
                                         onClick = { onCalculateMeterBillClick(item.meter.id) },
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.weight(1f),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
                                     ) {
                                         Icon(imageVector = Icons.Default.Calculate, contentDescription = null)
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Calculate Bill")
+                                        Text(
+                                            text = "Calculate Bill",
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
                                     }
 
                                     OutlinedButton(
                                         onClick = { onDailyLogClick(item.meter.id) },
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.weight(1f),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
                                     ) {
                                         Icon(imageVector = Icons.Default.Speed, contentDescription = null)
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Daily Log")
+                                        Text(
+                                            text = "Daily Log",
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
                                     }
                                 }
                             }
@@ -494,7 +505,7 @@ fun TenantDetailScreen(
                                         fontWeight = FontWeight.SemiBold
                                     )
 
-                                    // Section 3 & 4: Collapsible "Complete Cycle Reading History" Card with Eye Icon Estimation Toggle
+                                    // Section 4 & 5: Independently expandable "History Daily Log" Card with conditional Eye Icon Estimation Toggle
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Card(
                                         modifier = Modifier.fillMaxWidth(),
@@ -517,35 +528,44 @@ fun TenantDetailScreen(
                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    modifier = Modifier.weight(1f, fill = false)
+                                                ) {
                                                     Icon(imageVector = Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                                     Spacer(modifier = Modifier.width(6.dp))
                                                     Text(
-                                                        text = "Complete Cycle Reading History",
+                                                        text = "History Daily Log",
                                                         style = MaterialTheme.typography.titleSmall,
                                                         fontWeight = FontWeight.Bold,
-                                                        color = MaterialTheme.colorScheme.primary
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                        maxLines = 1,
+                                                        softWrap = false
                                                     )
                                                 }
 
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    // Eye Icon Estimation Toggle matching Daily Log!
-                                                    Text(
-                                                        text = "Estimation",
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                    )
-                                                    IconButton(
-                                                        onClick = {
-                                                            onToggleCycleEstimation(reading.id, !isEstimationEnabled)
-                                                        }
-                                                    ) {
-                                                        Icon(
-                                                            imageVector = if (isEstimationEnabled) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                                            contentDescription = if (isEstimationEnabled) "Estimation Enabled" else "Estimation Disabled",
-                                                            tint = if (isEstimationEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                            modifier = Modifier.height(20.dp).width(20.dp)
+                                                    // Show existing eye-icon estimation toggle only after History Daily Log is expanded
+                                                    if (isHistoryExpanded) {
+                                                        Text(
+                                                            text = "Estimation",
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            maxLines = 1,
+                                                            softWrap = false
                                                         )
+                                                        IconButton(
+                                                            onClick = {
+                                                                onToggleCycleEstimation(reading.id, !isEstimationEnabled)
+                                                            }
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = if (isEstimationEnabled) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                                                contentDescription = if (isEstimationEnabled) "Estimation Enabled" else "Estimation Disabled",
+                                                                tint = if (isEstimationEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                modifier = Modifier.height(20.dp).width(20.dp)
+                                                            )
+                                                        }
                                                     }
 
                                                     IconButton(
@@ -559,7 +579,7 @@ fun TenantDetailScreen(
                                                     ) {
                                                         Icon(
                                                             imageVector = if (isHistoryExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                                            contentDescription = null
+                                                            contentDescription = if (isHistoryExpanded) "Collapse History Daily Log" else "Expand History Daily Log"
                                                         )
                                                     }
                                                 }
@@ -628,11 +648,16 @@ fun TenantDetailScreen(
 
                                     OutlinedButton(
                                         onClick = { onBillClick(reading.id) },
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                                     ) {
                                         Icon(imageVector = Icons.AutoMirrored.Filled.ReceiptLong, contentDescription = null)
                                         Spacer(modifier = Modifier.width(6.dp))
-                                        Text("View Full Statement")
+                                        Text(
+                                            text = "View Full Statement",
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
                                     }
                                 }
                             }
@@ -728,7 +753,8 @@ fun TenantDetailScreen(
                         enabled = !uiState.editReadingState.isSaving,
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp)
+                            .height(48.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
                     ) {
                         if (uiState.editReadingState.isSaving) {
                             CircularProgressIndicator(
@@ -738,7 +764,11 @@ fun TenantDetailScreen(
                                     .height(20.dp)
                             )
                         } else {
-                            Text("Save Changes")
+                            Text(
+                                text = "Save Changes",
+                                maxLines = 1,
+                                softWrap = false
+                            )
                         }
                     }
 
@@ -747,9 +777,14 @@ fun TenantDetailScreen(
                         enabled = !uiState.editReadingState.isSaving,
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp)
+                            .height(48.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
                     ) {
-                        Text("Cancel")
+                        Text(
+                            text = "Cancel",
+                            maxLines = 1,
+                            softWrap = false
+                        )
                     }
                 }
 
