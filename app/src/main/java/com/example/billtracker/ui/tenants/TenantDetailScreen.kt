@@ -10,35 +10,48 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ElectricBolt
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,7 +62,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.billtracker.domain.calculator.ReadingStatus
 import com.example.billtracker.domain.formatter.CurrencyFormatter
 import com.example.billtracker.domain.formatter.ReadingFormatter
 import com.example.billtracker.domain.model.RateType
@@ -70,6 +85,12 @@ fun TenantDetailScreen(
     onDailyLogClick: (Long) -> Unit,
     onBillClick: (Long) -> Unit,
     onTogglePaymentStatus: (Long, Boolean) -> Unit,
+    onToggleCycleEstimation: (Long, Boolean) -> Unit,
+    onOpenEditReading: (Long, Long) -> Unit,
+    onCloseEditReading: () -> Unit,
+    onEditValueChange: (String) -> Unit,
+    onEditNotesChange: (String) -> Unit,
+    onSaveEditedReading: () -> Unit,
     onBackClick: () -> Unit
 ) {
     val tenant = uiState.tenant
@@ -78,6 +99,7 @@ fun TenantDetailScreen(
     val dateTimeFormatter = remember { SimpleDateFormat("MMM dd, yyyy • hh:mm a", Locale.getDefault()) }
 
     var expandedBillIds by remember { mutableStateOf(setOf<Long>()) }
+    var expandedHistoryBillIds by remember { mutableStateOf(setOf<Long>()) }
 
     Scaffold(
         topBar = {
@@ -301,7 +323,7 @@ fun TenantDetailScreen(
                     }
                 }
 
-                // Bill History Section (Organized by Authoritative Billing Cycle Dates)
+                // Bill History Section (Section 3: Collapsible Complete Cycle Reading History with Eye Icon)
                 item {
                     Text(
                         text = "Bill History",
@@ -323,16 +345,24 @@ fun TenantDetailScreen(
                     items(uiState.readingsHistory, key = { it.reading.id }) { historyModel ->
                         val reading = historyModel.reading
                         val isExpanded = expandedBillIds.contains(reading.id)
+                        val isHistoryExpanded = expandedHistoryBillIds.contains(reading.id)
 
                         // Authoritative billing cycle date range (First Reading Date -> Last Reading Date)
                         val cycleRangeText = "${shortDateFormatter.format(Date(historyModel.cycleStartDateMillis))} – ${shortDateFormatter.format(Date(historyModel.cycleEndDateMillis))}"
                         val unit = if (historyModel.utilityType == UtilityType.WATER) "m³" else "kWh"
 
+                        val isEstimationEnabled = uiState.cycleEstimationMap[reading.id] ?: true
+                        val filteredLogs = if (isEstimationEnabled) {
+                            historyModel.cycleLogs
+                        } else {
+                            historyModel.cycleLogs.filter { it.reading.status == ReadingStatus.ACTUAL }
+                        }
+
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    onDailyLogClick(reading.meterId)
+                                    expandedBillIds = if (isExpanded) expandedBillIds - reading.id else expandedBillIds + reading.id
                                 },
                             shape = MaterialTheme.shapes.medium
                         ) {
@@ -405,7 +435,7 @@ fun TenantDetailScreen(
                                     }
                                 }
 
-                                // Expanded Bill Computation & Visually Distinct Historical Daily Log
+                                // Expanded Bill Computation & Collapsible Reading History Section
                                 if (isExpanded) {
                                     Spacer(modifier = Modifier.height(10.dp))
                                     HorizontalDivider()
@@ -464,46 +494,129 @@ fun TenantDetailScreen(
                                         fontWeight = FontWeight.SemiBold
                                     )
 
-                                    // Visually Distinct Daily Log History Container for this Billing Cycle
-                                    if (historyModel.cycleLogs.isNotEmpty()) {
-                                        Spacer(modifier = Modifier.height(12.dp))
-                                        Card(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            shape = MaterialTheme.shapes.medium,
-                                            colors = CardDefaults.cardColors(
-                                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                            )
-                                        ) {
-                                            Column(modifier = Modifier.padding(12.dp)) {
-                                                Text(
-                                                    text = "Daily Log History for This Billing Cycle",
-                                                    style = MaterialTheme.typography.titleSmall,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = MaterialTheme.colorScheme.primary
-                                                )
-                                                Spacer(modifier = Modifier.height(6.dp))
-
-                                                historyModel.cycleLogs.forEach { logItem ->
-                                                    val dateStr = if (logItem.reading.hasTime) dateTimeFormatter.format(Date(logItem.reading.dateMillis)) else dateFormatter.format(Date(logItem.reading.dateMillis))
-                                                    val valStr = logItem.reading.readingValue?.let { "$it $unit" } ?: "--"
-                                                    val consStr = logItem.reading.dailyConsumption?.let { "+$it $unit" } ?: "N/A"
-
-                                                    Row(
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .padding(vertical = 4.dp),
-                                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                                        verticalAlignment = Alignment.CenterVertically
-                                                    ) {
-                                                        Column {
-                                                            Text(valStr, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
-                                                            Text(dateStr, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    // Section 3 & 4: Collapsible "Complete Cycle Reading History" Card with Eye Icon Estimation Toggle
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = MaterialTheme.shapes.medium,
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                        )
+                                    ) {
+                                        Column(modifier = Modifier.padding(12.dp)) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable {
+                                                        expandedHistoryBillIds = if (isHistoryExpanded) {
+                                                            expandedHistoryBillIds - reading.id
+                                                        } else {
+                                                            expandedHistoryBillIds + reading.id
                                                         }
+                                                    },
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Icon(imageVector = Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Text(
+                                                        text = "Complete Cycle Reading History",
+                                                        style = MaterialTheme.typography.titleSmall,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
 
-                                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                                            Text(consStr, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                                            Spacer(modifier = Modifier.width(6.dp))
-                                                            ReadingStatusBadge(status = logItem.reading.status)
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    // Eye Icon Estimation Toggle matching Daily Log!
+                                                    Text(
+                                                        text = "Estimation",
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                    IconButton(
+                                                        onClick = {
+                                                            onToggleCycleEstimation(reading.id, !isEstimationEnabled)
+                                                        }
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = if (isEstimationEnabled) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                                            contentDescription = if (isEstimationEnabled) "Estimation Enabled" else "Estimation Disabled",
+                                                            tint = if (isEstimationEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            modifier = Modifier.height(20.dp).width(20.dp)
+                                                        )
+                                                    }
+
+                                                    IconButton(
+                                                        onClick = {
+                                                            expandedHistoryBillIds = if (isHistoryExpanded) {
+                                                                expandedHistoryBillIds - reading.id
+                                                            } else {
+                                                                expandedHistoryBillIds + reading.id
+                                                            }
+                                                        }
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = if (isHistoryExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                                            contentDescription = null
+                                                        )
+                                                    }
+                                                }
+                                            }
+
+                                            if (isHistoryExpanded) {
+                                                Spacer(modifier = Modifier.height(8.dp))
+
+                                                if (filteredLogs.isEmpty()) {
+                                                    Text(
+                                                        text = "No readings available for this filter.",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        modifier = Modifier.padding(vertical = 8.dp)
+                                                    )
+                                                } else {
+                                                    filteredLogs.forEach { logItem ->
+                                                        val dateStr = if (logItem.reading.hasTime) dateTimeFormatter.format(Date(logItem.reading.dateMillis)) else dateFormatter.format(Date(logItem.reading.dateMillis))
+                                                        val valStr = logItem.reading.readingValue?.let { "$it $unit" } ?: "--"
+                                                        val consStr = logItem.reading.dailyConsumption?.let { "+$it $unit" } ?: "N/A"
+
+                                                        Row(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .padding(vertical = 4.dp),
+                                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            Column {
+                                                                Text(valStr, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                                                                Text(dateStr, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                            }
+
+                                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                Text(consStr, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                                Spacer(modifier = Modifier.width(6.dp))
+                                                                ReadingStatusBadge(status = logItem.reading.status)
+
+                                                                // Section 5: Pencil edit button for ACTUAL readings only!
+                                                                if (logItem.reading.status == ReadingStatus.ACTUAL && logItem.reading.actualReadingId != null) {
+                                                                    IconButton(
+                                                                        onClick = {
+                                                                            onOpenEditReading(
+                                                                                logItem.reading.actualReadingId,
+                                                                                reading.meterId
+                                                                            )
+                                                                        }
+                                                                    ) {
+                                                                        Icon(
+                                                                            imageVector = Icons.Default.Edit,
+                                                                            contentDescription = "Edit Actual Reading",
+                                                                            tint = MaterialTheme.colorScheme.primary,
+                                                                            modifier = Modifier.height(18.dp).width(18.dp)
+                                                                        )
+                                                                    }
+                                                                }
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -528,6 +641,119 @@ fun TenantDetailScreen(
                 }
 
                 item { Spacer(modifier = Modifier.height(32.dp)) }
+            }
+        }
+    }
+
+    // Modal Bottom Sheet to Edit Actual Reading from Profile History (Section 5)
+    if (uiState.editReadingState.isOpen) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+        ModalBottomSheet(
+            onDismissRequest = { if (!uiState.editReadingState.isSaving) onCloseEditReading() },
+            sheetState = sheetState
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
+                    .imePadding()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Edit Actual Reading",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    IconButton(
+                        onClick = onCloseEditReading,
+                        enabled = !uiState.editReadingState.isSaving
+                    ) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Close Form")
+                    }
+                }
+
+                if (uiState.editReadingState.error != null) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = uiState.editReadingState.error,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                }
+
+                OutlinedTextField(
+                    value = uiState.editReadingState.value,
+                    onValueChange = onEditValueChange,
+                    label = { Text("Reading Value") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    isError = uiState.editReadingState.error != null,
+                    enabled = !uiState.editReadingState.isSaving,
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = uiState.editReadingState.notes,
+                    onValueChange = onEditNotesChange,
+                    label = { Text("Notes (Optional)") },
+                    enabled = !uiState.editReadingState.isSaving,
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Button(
+                        onClick = onSaveEditedReading,
+                        enabled = !uiState.editReadingState.isSaving,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        if (uiState.editReadingState.isSaving) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier
+                                    .width(20.dp)
+                                    .height(20.dp)
+                            )
+                        } else {
+                            Text("Save Changes")
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = onCloseEditReading,
+                        enabled = !uiState.editReadingState.isSaving,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
