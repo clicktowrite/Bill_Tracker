@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -356,7 +356,16 @@ fun DailyReadingsScreen(
                                 modifier = Modifier.fillMaxSize(),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                items(uiState.interpolatedReadings, key = { "${it.status.name}_${it.dateMillis}" }) { item ->
+                                itemsIndexed(
+                                    items = uiState.interpolatedReadings,
+                                    key = { index, item ->
+                                        if (item.actualReadingId != null) {
+                                            "actual_${item.actualReadingId}_${item.dateMillis}"
+                                        } else {
+                                            "${item.status.name}_${item.dateMillis}_$index"
+                                        }
+                                    }
+                                ) { _, item ->
                                     val dateText = if (item.hasTime) {
                                         dateTimeFormatter.format(Date(item.dateMillis))
                                     } else {
