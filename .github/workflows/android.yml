@@ -1,3 +1,4 @@
+
 name: BillTracker Android Build
 
 on:
@@ -22,13 +23,29 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+fix-estimated-crash-3145271818671171167
           cache: gradle
+
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install required Android SDK components
+        run: |
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
 
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
       - name: Build BillTracker APK
+
         run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+        run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
 
       - name: Upload downloadable APK
         uses: actions/upload-artifact@v4
