@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -25,7 +26,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.RoundingMode
-import java.util.Calendar
 
 data class MeterWithLatestReading(
     val meter: Meter,
@@ -50,18 +50,14 @@ data class BillHistoryItemModel(
     val cycleLogs: List<ProfileDailyReadingItem>
 )
 
-data class HistoricalReadingFormState(
-    val isAddHistoricalReadingOpen: Boolean = false,
-    val historicalTargetBillId: Long? = null,
-    val historicalMeterId: Long? = null,
-    val historicalFirstReadingVal: BigDecimal = BigDecimal.ZERO,
-    val historicalLastReadingVal: BigDecimal = BigDecimal.ZERO,
-    val historicalMinDateMillis: Long = 0L,
-    val historicalMaxDateMillis: Long = 0L,
-    val newHistoricalValue: String = "",
-    val selectedHistoricalDateMillis: Long = System.currentTimeMillis(),
-    val historicalError: String? = null,
-    val isSavingHistorical: Boolean = false
+data class EditProfileReadingState(
+    val isOpen: Boolean = false,
+    val editingReadingId: Long? = null,
+    val meterId: Long = 0L,
+    val value: String = "",
+    val notes: String = "",
+    val isSaving: Boolean = false,
+    val error: String? = null
 )
 
 data class TenantDetailUiState(
@@ -73,7 +69,8 @@ data class TenantDetailUiState(
     val latestWaterBill: BigDecimal = BigDecimal.ZERO,
     val totalDue: BigDecimal = BigDecimal.ZERO,
     val currencySymbol: String = "₱",
-    val historicalForm: HistoricalReadingFormState = HistoricalReadingFormState(),
+    val cycleEstimationMap: Map<Long, Boolean> = emptyMap(), // Eye icon toggle state per billing cycle (default true)
+    val editReadingState: EditProfileReadingState = EditProfileReadingState(),
     val isLoading: Boolean = true
 )
 
@@ -83,9 +80,10 @@ class TenantDetailViewModel(
     private val tenantId: Long
 ) : ViewModel() {
 
-    private val _historicalForm = MutableStateFlow(HistoricalReadingFormState())
+    private val _cycleEstimationMap = MutableStateFlow<Map<Long, Boolean>>(emptyMap())
+    private val _editReadingState = MutableStateFlow(EditProfileReadingState())
 
-    // Bug 2 Fix: Query ALL meters (including closed tracking sessions) for this tenant
+    // Query ALL meters (including closed tracking sessions) for this tenant
     private val allTenantMetersFlow = repository.getAllMetersForTenant(tenantId)
 
     private val dailyReadingsForTenantFlow = allTenantMetersFlow.flatMapLatest { meters ->
@@ -105,42 +103,11 @@ class TenantDetailViewModel(
                         )
                     }
 
-                    val interpolated = if (meter.isForecastEnabled) {
-                        DailyInterpolationEngine.interpolateReadings(
-                            actualReadings = inputs,
-                            forecastDays = 0,
-                            utilityType = meter.utilityType
-                        ).filter { it.status == ReadingStatus.ACTUAL || it.status == ReadingStatus.ESTIMATED }
-                    } else {
-                        val sortedInputs = inputs
-                            .mapNotNull { r ->
-                                val bd = BillingCalculator.parseBigDecimal(r.value)
-                                if (bd != null) r to bd else null
-                            }
-                            .sortedBy { it.first.timestamp }
-
-                        var prevVal: BigDecimal? = null
-                        sortedInputs.map { (reading, actualVal) ->
-                            val consumption = if (prevVal != null) {
-                                if (reading.isMeterReset || actualVal < prevVal) {
-                                    BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
-                                } else {
-                                    actualVal.subtract(prevVal).setScale(2, RoundingMode.HALF_UP)
-                                }
-                            } else null
-                            prevVal = actualVal
-
-                            InterpolatedDailyReading(
-                                dateMillis = reading.timestamp,
-                                readingValue = actualVal,
-                                status = ReadingStatus.ACTUAL,
-                                dailyConsumption = consumption,
-                                hasTime = reading.hasTime,
-                                actualReadingId = reading.id,
-                                notes = reading.notes
-                            )
-                        }
-                    }
+                    val interpolated = DailyInterpolationEngine.interpolateReadings(
+                        actualReadings = inputs,
+                        forecastDays = 0,
+                        utilityType = meter.utilityType
+                    ).filter { it.status == ReadingStatus.ACTUAL || it.status == ReadingStatus.ESTIMATED }
 
                     interpolated.map { ir ->
                         ProfileDailyReadingItem(
@@ -193,7 +160,7 @@ class TenantDetailViewModel(
 
         val totalDue = elecAmt.add(waterAmt).setScale(2, RoundingMode.HALF_UP)
 
-        // Bug 2 Fix: Match every saved bill to its EXACT daily log history (First Reading Date -> Last Reading Date)
+        // Match every saved bill to its EXACT daily log history (First Reading Date -> Last Reading Date)
         val billHistoryModels = readings.sortedByDescending { it.billingDate }.map { reading ->
             val meter = allMeters.find { it.id == reading.meterId }
             val meterName = meter?.name ?: "Meter #${reading.meterId}"
@@ -237,9 +204,13 @@ class TenantDetailViewModel(
 
     val uiState: StateFlow<TenantDetailUiState> = combine(
         baseUiState,
-        _historicalForm
-    ) { base, formState ->
-        base.copy(historicalForm = formState)
+        _cycleEstimationMap,
+        _editReadingState
+    ) { base, estimationMap, editState ->
+        base.copy(
+            cycleEstimationMap = estimationMap,
+            editReadingState = editState
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -252,95 +223,70 @@ class TenantDetailViewModel(
         }
     }
 
-    // Bug 3 Fix: Open form to add a missed historical reading inside a completed billing cycle
-    fun onOpenAddHistoricalReading(
-        billId: Long,
-        meterId: Long,
-        firstValStr: String,
-        lastValStr: String,
-        startDateMillis: Long,
-        endDateMillis: Long
-    ) {
-        val firstVal = BillingCalculator.parseBigDecimal(firstValStr) ?: BigDecimal.ZERO
-        val lastVal = BillingCalculator.parseBigDecimal(lastValStr) ?: BigDecimal.ZERO
-
-        _historicalForm.value = HistoricalReadingFormState(
-            isAddHistoricalReadingOpen = true,
-            historicalTargetBillId = billId,
-            historicalMeterId = meterId,
-            historicalFirstReadingVal = firstVal,
-            historicalLastReadingVal = lastVal,
-            historicalMinDateMillis = startDateMillis,
-            historicalMaxDateMillis = endDateMillis,
-            newHistoricalValue = "",
-            selectedHistoricalDateMillis = (startDateMillis + endDateMillis) / 2,
-            historicalError = null
-        )
+    // Toggle Eye Icon estimation visibility for a specific billing cycle
+    fun toggleCycleEstimation(billId: Long, enabled: Boolean) {
+        val current = _cycleEstimationMap.value.toMutableMap()
+        current[billId] = enabled
+        _cycleEstimationMap.value = current
     }
 
-    fun onCloseAddHistoricalReading() {
-        _historicalForm.value = HistoricalReadingFormState()
+    fun onOpenEditReading(actualReadingId: Long, meterId: Long) {
+        viewModelScope.launch {
+            val drs = repository.getDailyReadingsForMeter(meterId).first()
+            val target = drs.find { it.id == actualReadingId } ?: return@launch
+
+            _editReadingState.value = EditProfileReadingState(
+                isOpen = true,
+                editingReadingId = target.id,
+                meterId = meterId,
+                value = target.readingValue,
+                notes = target.notes ?: "",
+                error = null
+            )
+        }
     }
 
-    fun onNewHistoricalValueChange(value: String) {
-        _historicalForm.value = _historicalForm.value.copy(newHistoricalValue = value, historicalError = null)
+    fun onCloseEditReading() {
+        _editReadingState.value = EditProfileReadingState()
     }
 
-    fun onHistoricalDateSelected(dateMillis: Long) {
-        _historicalForm.value = _historicalForm.value.copy(selectedHistoricalDateMillis = dateMillis, historicalError = null)
+    fun onEditValueChange(value: String) {
+        _editReadingState.value = _editReadingState.value.copy(value = value, error = null)
     }
 
-    // Bug 3 Fix: Validate newly added historical reading (> First Reading and < Last Reading)
-    fun saveHistoricalReading() {
-        val current = _historicalForm.value
-        val meterId = current.historicalMeterId ?: return
-        val parsed = BillingCalculator.parseBigDecimal(current.newHistoricalValue)
+    fun onEditNotesChange(notes: String) {
+        _editReadingState.value = _editReadingState.value.copy(notes = notes)
+    }
+
+    fun saveEditedReading() {
+        val current = _editReadingState.value
+        val readingId = current.editingReadingId ?: return
+        val parsed = BillingCalculator.parseBigDecimal(current.value)
 
         if (parsed == null) {
-            _historicalForm.value = current.copy(historicalError = "Please enter a valid non-negative reading value.")
-            return
-        }
-
-        // Bug 3 Rule: Reading MUST be > First Reading AND < Last Reading
-        val firstVal = current.historicalFirstReadingVal
-        val lastVal = current.historicalLastReadingVal
-
-        if (parsed <= firstVal || parsed >= lastVal) {
-            _historicalForm.value = current.copy(
-                historicalError = "Historical reading must be greater than the first reading ($firstVal) and less than the last reading ($lastVal)."
-            )
-            return
-        }
-
-        // Date must be strictly between start date and end date
-        if (current.selectedHistoricalDateMillis <= current.historicalMinDateMillis ||
-            current.selectedHistoricalDateMillis >= current.historicalMaxDateMillis
-        ) {
-            _historicalForm.value = current.copy(
-                historicalError = "Selected date must be between the billing cycle start and end dates."
-            )
+            _editReadingState.value = current.copy(error = "Please enter a valid non-negative reading value.")
             return
         }
 
         viewModelScope.launch {
-            _historicalForm.value = current.copy(isSavingHistorical = true)
+            _editReadingState.value = current.copy(isSaving = true)
 
             try {
-                val dr = DailyReading(
-                    meterId = meterId,
-                    readingDate = current.selectedHistoricalDateMillis,
-                    readingValue = parsed.toString(),
-                    hasTime = false,
-                    isMeterReset = false,
-                    notes = "Forgotten Reading Added to Completed Cycle"
-                )
-                repository.saveDailyReading(dr)
+                val drs = repository.getDailyReadingsForMeter(current.meterId).first()
+                val target = drs.find { it.id == readingId } ?: return@launch
 
-                _historicalForm.value = HistoricalReadingFormState()
+                val updatedDr = target.copy(
+                    readingValue = parsed.toString(),
+                    notes = current.notes.trim().takeIf { it.isNotBlank() }
+                )
+
+                repository.updateDailyReading(updatedDr)
+
+                _editReadingState.value = EditProfileReadingState()
             } catch (e: Exception) {
-                _historicalForm.value = current.copy(
-                    isSavingHistorical = false,
-                    historicalError = e.localizedMessage ?: "Failed to save historical reading."
+                _editReadingState.value = current.copy(
+                    isSaving = false,
+                    error = e.localizedMessage ?: "Failed to update reading."
                 )
             }
         }

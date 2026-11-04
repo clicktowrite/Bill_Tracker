@@ -299,6 +299,12 @@ fun BillTrackerNavHost(
                     navController.navigate(NavRoutes.createBillDetailRoute(readingId))
                 },
                 onTogglePaymentStatus = viewModel::togglePaymentStatus,
+                onToggleCycleEstimation = viewModel::toggleCycleEstimation,
+                onOpenEditReading = viewModel::onOpenEditReading,
+                onCloseEditReading = viewModel::onCloseEditReading,
+                onEditValueChange = viewModel::onEditValueChange,
+                onEditNotesChange = viewModel::onEditNotesChange,
+                onSaveEditedReading = viewModel::saveEditedReading,
                 onBackClick = { navController.popBackStack() }
             )
         }
