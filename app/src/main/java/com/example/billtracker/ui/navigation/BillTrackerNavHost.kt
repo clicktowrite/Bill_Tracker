@@ -259,6 +259,7 @@ fun BillTrackerNavHost(
                 onDestinationTenantSelect = viewModel::onDestinationTenantSelect,
                 onConfirmClosePeriod = viewModel::confirmCloseTrackingPeriodAndTransfer,
                 onDismissClosePeriodDialog = viewModel::onDismissClosePeriodDialog,
+                onPhotoPathChange = viewModel::onPhotoPathChange,
                 onNotesChange = viewModel::onNotesChange,
                 onLogClick = viewModel::logDailyReading,
                 onToggleForecast = viewModel::toggleForecastEnabled,
@@ -304,7 +305,15 @@ fun BillTrackerNavHost(
                 onCloseEditReading = viewModel::onCloseEditReading,
                 onEditValueChange = viewModel::onEditValueChange,
                 onEditNotesChange = viewModel::onEditNotesChange,
+                onEditPhotoPathChange = viewModel::onEditPhotoPathChange,
                 onSaveEditedReading = viewModel::saveEditedReading,
+                onOpenAddMissingReading = viewModel::onOpenAddMissingReading,
+                onCloseAddMissingReading = viewModel::onCloseAddMissingReading,
+                onMissingReadingValueChange = viewModel::onMissingReadingValueChange,
+                onMissingReadingDateChange = viewModel::onMissingReadingDateChange,
+                onMissingReadingNotesChange = viewModel::onMissingReadingNotesChange,
+                onMissingReadingPhotoPathChange = viewModel::onMissingReadingPhotoPathChange,
+                onSaveMissingReading = viewModel::saveMissingReading,
                 onBackClick = { navController.popBackStack() }
             )
         }

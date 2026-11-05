@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.WaterDrop
@@ -41,6 +42,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -51,8 +54,11 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
+import com.example.billtracker.ui.components.PhotoEvidencePicker
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -91,7 +97,15 @@ fun TenantDetailScreen(
     onCloseEditReading: () -> Unit,
     onEditValueChange: (String) -> Unit,
     onEditNotesChange: (String) -> Unit,
+    onEditPhotoPathChange: (String?) -> Unit,
     onSaveEditedReading: () -> Unit,
+    onOpenAddMissingReading: (Long, Long, Long) -> Unit,
+    onCloseAddMissingReading: () -> Unit,
+    onMissingReadingValueChange: (String) -> Unit,
+    onMissingReadingDateChange: (Long) -> Unit,
+    onMissingReadingNotesChange: (String) -> Unit,
+    onMissingReadingPhotoPathChange: (String?) -> Unit,
+    onSaveMissingReading: () -> Unit,
     onBackClick: () -> Unit
 ) {
     val tenant = uiState.tenant
@@ -101,6 +115,7 @@ fun TenantDetailScreen(
 
     var expandedBillIds by remember { mutableStateOf(setOf<Long>()) }
     var expandedHistoryBillIds by remember { mutableStateOf(setOf<Long>()) }
+    var showMissingDatePickerDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -588,6 +603,22 @@ fun TenantDetailScreen(
                                             if (isHistoryExpanded) {
                                                 Spacer(modifier = Modifier.height(8.dp))
 
+                                                // Add Missing Reading Button
+                                                OutlinedButton(
+                                                    onClick = {
+                                                        val midpoint = (historyModel.cycleStartDateMillis + historyModel.cycleEndDateMillis) / 2
+                                                        onOpenAddMissingReading(reading.id, reading.meterId, midpoint)
+                                                    },
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                                                ) {
+                                                    Icon(imageVector = Icons.Default.Add, contentDescription = null)
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Text("Add Missing Reading", maxLines = 1, softWrap = false)
+                                                }
+
+                                                Spacer(modifier = Modifier.height(8.dp))
+
                                                 if (filteredLogs.isEmpty()) {
                                                     Text(
                                                         text = "No readings available for this filter.",
@@ -742,6 +773,12 @@ fun TenantDetailScreen(
                     singleLine = true
                 )
 
+                PhotoEvidencePicker(
+                    photoPath = uiState.editReadingState.photoPath,
+                    onPhotoPathChange = onEditPhotoPathChange,
+                    enabled = !uiState.editReadingState.isSaving
+                )
+
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Row(
@@ -790,6 +827,171 @@ fun TenantDetailScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
             }
+        }
+    }
+
+    // Modal Bottom Sheet to Add Missing Reading from Profile History
+    if (uiState.addMissingReadingState.isOpen) {
+        val missingSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+        ModalBottomSheet(
+            onDismissRequest = { if (!uiState.addMissingReadingState.isSaving) onCloseAddMissingReading() },
+            sheetState = missingSheetState
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
+                    .imePadding()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Add Missing Reading",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    IconButton(
+                        onClick = onCloseAddMissingReading,
+                        enabled = !uiState.addMissingReadingState.isSaving
+                    ) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Close Form")
+                    }
+                }
+
+                if (uiState.addMissingReadingState.error != null) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = uiState.addMissingReadingState.error,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                }
+
+                OutlinedTextField(
+                    value = uiState.addMissingReadingState.value,
+                    onValueChange = onMissingReadingValueChange,
+                    label = { Text("Reading Value") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    isError = uiState.addMissingReadingState.error != null,
+                    enabled = !uiState.addMissingReadingState.isSaving,
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                OutlinedButton(
+                    onClick = { showMissingDatePickerDialog = true },
+                    enabled = !uiState.addMissingReadingState.isSaving,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(imageVector = Icons.Default.CalendarMonth, contentDescription = null)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Reading Date: ${dateFormatter.format(Date(uiState.addMissingReadingState.dateMillis))}")
+                }
+
+                OutlinedTextField(
+                    value = uiState.addMissingReadingState.notes,
+                    onValueChange = onMissingReadingNotesChange,
+                    label = { Text("Notes (Optional)") },
+                    enabled = !uiState.addMissingReadingState.isSaving,
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                PhotoEvidencePicker(
+                    photoPath = uiState.addMissingReadingState.photoPath,
+                    onPhotoPathChange = onMissingReadingPhotoPathChange,
+                    enabled = !uiState.addMissingReadingState.isSaving
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Button(
+                        onClick = onSaveMissingReading,
+                        enabled = !uiState.addMissingReadingState.isSaving,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                    ) {
+                        if (uiState.addMissingReadingState.isSaving) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier
+                                    .width(20.dp)
+                                    .height(20.dp)
+                            )
+                        } else {
+                            Text(
+                                text = "Save Reading",
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = onCloseAddMissingReading,
+                        enabled = !uiState.addMissingReadingState.isSaving,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "Cancel",
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+    }
+
+    if (showMissingDatePickerDialog) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = uiState.addMissingReadingState.dateMillis
+        )
+        DatePickerDialog(
+            onDismissRequest = { showMissingDatePickerDialog = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { onMissingReadingDateChange(it) }
+                        showMissingDatePickerDialog = false
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showMissingDatePickerDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
         }
     }
 }

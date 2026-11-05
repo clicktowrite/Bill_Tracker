@@ -53,6 +53,7 @@ data class DailyReadingsUiState(
     val selectedMinute: Int = Calendar.getInstance().get(Calendar.MINUTE),
     val isMeterReset: Boolean = false,
     val isLastReading: Boolean = false,
+    val photoPath: String? = null,
     val navigateToCalculateBillMeterId: Long? = null,
     val selectedDestinationTenantId: Long? = null,
     val showClosePeriodConfirmationDialog: Boolean = false,
@@ -251,6 +252,7 @@ class DailyReadingsViewModel(
                 selectedHour = cal.get(Calendar.HOUR_OF_DAY),
                 selectedMinute = cal.get(Calendar.MINUTE),
                 isMeterReset = targetReading.isMeterReset,
+                photoPath = targetReading.photoPath,
                 notes = targetReading.notes ?: "",
                 error = null,
                 readingWarning = null,
@@ -267,6 +269,7 @@ class DailyReadingsViewModel(
             editingReadingId = null,
             newReadingValue = "",
             notes = "",
+            photoPath = null,
             isMeterReset = false,
             isLastReading = false,
             hasTime = false,
@@ -275,6 +278,10 @@ class DailyReadingsViewModel(
             navigateToCalculateBillMeterId = null,
             successMessage = null
         )
+    }
+
+    fun onPhotoPathChange(path: String?) {
+        _formState.value = _formState.value.copy(photoPath = path)
     }
 
     fun toggleForecastExpanded() {
@@ -478,6 +485,7 @@ class DailyReadingsViewModel(
                         readingValue = parsed.toString(),
                         hasTime = current.hasTime,
                         isMeterReset = current.isMeterReset,
+                        photoPath = current.photoPath,
                         notes = current.notes.trim().takeIf { it.isNotBlank() }
                     )
                     repository.updateDailyReading(dr)
@@ -497,6 +505,7 @@ class DailyReadingsViewModel(
                         readingValue = parsed.toString(),
                         hasTime = current.hasTime,
                         isMeterReset = current.isMeterReset,
+                        photoPath = current.photoPath,
                         notes = current.notes.trim().takeIf { it.isNotBlank() }
                     )
                     repository.saveDailyReading(dr)
@@ -507,6 +516,7 @@ class DailyReadingsViewModel(
                         isBottomSheetOpen = !isLast,
                         newReadingValue = parsed.toString(),
                         notes = "",
+                        photoPath = null,
                         isMeterReset = false,
                         isLastReading = false,
                         error = null,

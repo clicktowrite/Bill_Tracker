@@ -7,6 +7,8 @@ import com.example.billtracker.domain.calculator.BillingCalculator
 import com.example.billtracker.domain.calculator.DailyInterpolationEngine
 import com.example.billtracker.domain.calculator.InputReading
 import com.example.billtracker.domain.calculator.InterpolatedDailyReading
+import com.example.billtracker.domain.calculator.MissingReadingValidationResult
+import com.example.billtracker.domain.calculator.MissingReadingValidator
 import com.example.billtracker.domain.calculator.ReadingStatus
 import com.example.billtracker.domain.model.DailyReading
 import com.example.billtracker.domain.model.Meter
@@ -55,9 +57,23 @@ data class EditProfileReadingState(
     val editingReadingId: Long? = null,
     val meterId: Long = 0L,
     val value: String = "",
+    val photoPath: String? = null,
     val notes: String = "",
     val isSaving: Boolean = false,
     val error: String? = null
+)
+
+data class AddMissingReadingState(
+    val isOpen: Boolean = false,
+    val billId: Long = 0L,
+    val meterId: Long = 0L,
+    val value: String = "",
+    val dateMillis: Long = System.currentTimeMillis(),
+    val photoPath: String? = null,
+    val notes: String = "",
+    val isSaving: Boolean = false,
+    val error: String? = null,
+    val successMessage: String? = null
 )
 
 data class TenantDetailUiState(
@@ -70,6 +86,7 @@ data class TenantDetailUiState(
     val totalDue: BigDecimal = BigDecimal.ZERO,
     val currencySymbol: String = "₱",
     val cycleEstimationMap: Map<Long, Boolean> = emptyMap(), // Eye icon toggle state per billing cycle (default true)
+    val addMissingReadingState: AddMissingReadingState = AddMissingReadingState(),
     val editReadingState: EditProfileReadingState = EditProfileReadingState(),
     val isLoading: Boolean = true
 )
@@ -82,6 +99,7 @@ class TenantDetailViewModel(
 
     private val _cycleEstimationMap = MutableStateFlow<Map<Long, Boolean>>(emptyMap())
     private val _editReadingState = MutableStateFlow(EditProfileReadingState())
+    private val _addMissingReadingState = MutableStateFlow(AddMissingReadingState())
 
     // Query ALL meters (including closed tracking sessions) for this tenant
     private val allTenantMetersFlow = repository.getAllMetersForTenant(tenantId)
@@ -205,11 +223,13 @@ class TenantDetailViewModel(
     val uiState: StateFlow<TenantDetailUiState> = combine(
         baseUiState,
         _cycleEstimationMap,
-        _editReadingState
-    ) { base, estimationMap, editState ->
+        _editReadingState,
+        _addMissingReadingState
+    ) { base, estimationMap, editState, missingState ->
         base.copy(
             cycleEstimationMap = estimationMap,
-            editReadingState = editState
+            editReadingState = editState,
+            addMissingReadingState = missingState
         )
     }.stateIn(
         scope = viewModelScope,
@@ -240,6 +260,7 @@ class TenantDetailViewModel(
                 editingReadingId = target.id,
                 meterId = meterId,
                 value = target.readingValue,
+                photoPath = target.photoPath,
                 notes = target.notes ?: "",
                 error = null
             )
@@ -256,6 +277,108 @@ class TenantDetailViewModel(
 
     fun onEditNotesChange(notes: String) {
         _editReadingState.value = _editReadingState.value.copy(notes = notes)
+    }
+
+    fun onEditPhotoPathChange(path: String?) {
+        _editReadingState.value = _editReadingState.value.copy(photoPath = path)
+    }
+
+    // --- Add Missing Reading ---
+    fun onOpenAddMissingReading(billId: Long, meterId: Long, initialDateMillis: Long) {
+        _addMissingReadingState.value = AddMissingReadingState(
+            isOpen = true,
+            billId = billId,
+            meterId = meterId,
+            dateMillis = initialDateMillis,
+            value = "",
+            photoPath = null,
+            notes = "",
+            isSaving = false,
+            error = null,
+            successMessage = null
+        )
+    }
+
+    fun onCloseAddMissingReading() {
+        _addMissingReadingState.value = AddMissingReadingState()
+    }
+
+    fun onMissingReadingValueChange(value: String) {
+        _addMissingReadingState.value = _addMissingReadingState.value.copy(value = value, error = null)
+    }
+
+    fun onMissingReadingDateChange(dateMillis: Long) {
+        _addMissingReadingState.value = _addMissingReadingState.value.copy(dateMillis = dateMillis, error = null)
+    }
+
+    fun onMissingReadingNotesChange(notes: String) {
+        _addMissingReadingState.value = _addMissingReadingState.value.copy(notes = notes)
+    }
+
+    fun onMissingReadingPhotoPathChange(path: String?) {
+        _addMissingReadingState.value = _addMissingReadingState.value.copy(photoPath = path)
+    }
+
+    fun saveMissingReading() {
+        val current = _addMissingReadingState.value
+        val parsed = BillingCalculator.parseBigDecimal(current.value)
+
+        if (parsed == null) {
+            _addMissingReadingState.value = current.copy(error = "Please enter a valid non-negative reading value.")
+            return
+        }
+
+        viewModelScope.launch {
+            _addMissingReadingState.value = current.copy(isSaving = true)
+
+            try {
+                // Fetch existing actual readings for this meter
+                val drs = repository.getDailyReadingsForMeter(current.meterId).first()
+                val actualPoints = drs.mapNotNull { dr ->
+                    BillingCalculator.parseBigDecimal(dr.readingValue)?.let { bd ->
+                        MissingReadingValidator.ActualReadingPoint(
+                            id = dr.id,
+                            timestamp = dr.readingDate,
+                            value = bd
+                        )
+                    }
+                }
+
+                // Strict neighboring validation
+                val validation = MissingReadingValidator.validate(
+                    newTimestamp = current.dateMillis,
+                    newValue = parsed,
+                    actualReadings = actualPoints
+                )
+
+                if (validation is MissingReadingValidationResult.Invalid) {
+                    _addMissingReadingState.value = current.copy(
+                        isSaving = false,
+                        error = validation.message
+                    )
+                    return@launch
+                }
+
+                val newReading = DailyReading(
+                    meterId = current.meterId,
+                    readingDate = current.dateMillis,
+                    readingValue = parsed.toString(),
+                    hasTime = false,
+                    isMeterReset = false,
+                    photoPath = current.photoPath,
+                    notes = current.notes.trim().takeIf { it.isNotBlank() }
+                )
+
+                repository.saveDailyReading(newReading)
+
+                _addMissingReadingState.value = AddMissingReadingState()
+            } catch (e: Exception) {
+                _addMissingReadingState.value = current.copy(
+                    isSaving = false,
+                    error = e.localizedMessage ?: "Failed to save missing reading."
+                )
+            }
+        }
     }
 
     fun saveEditedReading() {
@@ -277,6 +400,7 @@ class TenantDetailViewModel(
 
                 val updatedDr = target.copy(
                     readingValue = parsed.toString(),
+                    photoPath = current.photoPath,
                     notes = current.notes.trim().takeIf { it.isNotBlank() }
                 )
 
