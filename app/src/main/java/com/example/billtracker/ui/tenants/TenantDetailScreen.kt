@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -96,9 +97,13 @@ fun TenantDetailScreen(
     onOpenEditReading: (Long, Long) -> Unit,
     onCloseEditReading: () -> Unit,
     onEditValueChange: (String) -> Unit,
+    onEditDateChange: (Long) -> Unit,
     onEditNotesChange: (String) -> Unit,
     onEditPhotoPathChange: (String?) -> Unit,
     onSaveEditedReading: () -> Unit,
+    onRequestDeleteReading: () -> Unit,
+    onDismissDeleteReading: () -> Unit,
+    onConfirmDeleteReading: () -> Unit,
     onOpenAddMissingReading: (Long, Long, Long) -> Unit,
     onCloseAddMissingReading: () -> Unit,
     onMissingReadingValueChange: (String) -> Unit,
@@ -116,6 +121,7 @@ fun TenantDetailScreen(
     var expandedBillIds by remember { mutableStateOf(setOf<Long>()) }
     var expandedHistoryBillIds by remember { mutableStateOf(setOf<Long>()) }
     var showMissingDatePickerDialog by remember { mutableStateOf(false) }
+    var showEditDatePickerDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -764,6 +770,16 @@ fun TenantDetailScreen(
                     singleLine = true
                 )
 
+                OutlinedButton(
+                    onClick = { showEditDatePickerDialog = true },
+                    enabled = !uiState.editReadingState.isSaving,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(imageVector = Icons.Default.CalendarMonth, contentDescription = null)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Reading Date: ${dateFormatter.format(Date(uiState.editReadingState.dateMillis))}")
+                }
+
                 OutlinedTextField(
                     value = uiState.editReadingState.notes,
                     onValueChange = onEditNotesChange,
@@ -773,10 +789,12 @@ fun TenantDetailScreen(
                     singleLine = true
                 )
 
+                // Upload photo only for historical readings (no camera capture option)
                 PhotoEvidencePicker(
                     photoPath = uiState.editReadingState.photoPath,
                     onPhotoPathChange = onEditPhotoPathChange,
-                    enabled = !uiState.editReadingState.isSaving
+                    enabled = !uiState.editReadingState.isSaving,
+                    allowCameraCapture = false
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -823,6 +841,20 @@ fun TenantDetailScreen(
                             softWrap = false
                         )
                     }
+                }
+
+                OutlinedButton(
+                    onClick = onRequestDeleteReading,
+                    enabled = !uiState.editReadingState.isSaving,
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Close, contentDescription = null)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Delete Reading", maxLines = 1, softWrap = false)
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -967,6 +999,55 @@ fun TenantDetailScreen(
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
+    }
+
+    if (showEditDatePickerDialog) {
+        val editDatePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = uiState.editReadingState.dateMillis
+        )
+        DatePickerDialog(
+            onDismissRequest = { showEditDatePickerDialog = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        editDatePickerState.selectedDateMillis?.let { onEditDateChange(it) }
+                        showEditDatePickerDialog = false
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDatePickerDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = editDatePickerState)
+        }
+    }
+
+    if (uiState.editReadingState.showDeleteConfirmDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = onDismissDeleteReading,
+            title = { Text("Delete Reading?") },
+            text = { Text("Are you sure you want to permanently delete this actual meter reading from the Daily Log History?") },
+            confirmButton = {
+                Button(
+                    onClick = onConfirmDeleteReading,
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = onDismissDeleteReading) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     if (showMissingDatePickerDialog) {

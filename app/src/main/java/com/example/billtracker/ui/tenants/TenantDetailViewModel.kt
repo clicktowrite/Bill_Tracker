@@ -57,10 +57,12 @@ data class EditProfileReadingState(
     val editingReadingId: Long? = null,
     val meterId: Long = 0L,
     val value: String = "",
+    val dateMillis: Long = System.currentTimeMillis(),
     val photoPath: String? = null,
     val notes: String = "",
     val isSaving: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val showDeleteConfirmDialog: Boolean = false
 )
 
 data class AddMissingReadingState(
@@ -260,9 +262,11 @@ class TenantDetailViewModel(
                 editingReadingId = target.id,
                 meterId = meterId,
                 value = target.readingValue,
+                dateMillis = target.readingDate,
                 photoPath = target.photoPath,
                 notes = target.notes ?: "",
-                error = null
+                error = null,
+                showDeleteConfirmDialog = false
             )
         }
     }
@@ -275,12 +279,58 @@ class TenantDetailViewModel(
         _editReadingState.value = _editReadingState.value.copy(value = value, error = null)
     }
 
+    fun onEditDateChange(dateMillis: Long) {
+        _editReadingState.value = _editReadingState.value.copy(dateMillis = dateMillis, error = null)
+    }
+
     fun onEditNotesChange(notes: String) {
         _editReadingState.value = _editReadingState.value.copy(notes = notes)
     }
 
     fun onEditPhotoPathChange(path: String?) {
         _editReadingState.value = _editReadingState.value.copy(photoPath = path)
+    }
+
+    fun requestDeleteReading() {
+        _editReadingState.value = _editReadingState.value.copy(showDeleteConfirmDialog = true)
+    }
+
+    fun dismissDeleteReading() {
+        _editReadingState.value = _editReadingState.value.copy(showDeleteConfirmDialog = false)
+    }
+
+    fun confirmDeleteReading() {
+        val current = _editReadingState.value
+        val readingId = current.editingReadingId ?: return
+
+        viewModelScope.launch {
+            try {
+                val drs = repository.getDailyReadingsForMeter(current.meterId).first()
+                val target = drs.find { it.id == readingId }
+                if (target != null) {
+                    val readings = repository.getReadingsForTenant(tenantId).first()
+                    val isBelongingToFinalizedBill = readings.any { r ->
+                        r.isFinalizedBill && r.meterId == current.meterId &&
+                        (r.billingDate == target.readingDate || (r.currentReading == target.readingValue && r.billingDate >= target.readingDate))
+                    }
+                    if (isBelongingToFinalizedBill) {
+                        _editReadingState.value = current.copy(
+                            error = "This reading is part of a finalized bill and cannot be deleted.",
+                            showDeleteConfirmDialog = false
+                        )
+                        return@launch
+                    }
+                }
+
+                repository.deleteDailyReading(readingId)
+                _editReadingState.value = EditProfileReadingState()
+            } catch (e: Exception) {
+                _editReadingState.value = current.copy(
+                    error = e.localizedMessage ?: "Failed to delete reading.",
+                    showDeleteConfirmDialog = false
+                )
+            }
+        }
     }
 
     // --- Add Missing Reading ---
@@ -398,8 +448,52 @@ class TenantDetailViewModel(
                 val drs = repository.getDailyReadingsForMeter(current.meterId).first()
                 val target = drs.find { it.id == readingId } ?: return@launch
 
+                // Exclude current reading when performing neighbor validation
+                val actualPoints = drs.mapNotNull { dr ->
+                    BillingCalculator.parseBigDecimal(dr.readingValue)?.let { bd ->
+                        MissingReadingValidator.ActualReadingPoint(
+                            id = dr.id,
+                            timestamp = dr.readingDate,
+                            value = bd
+                        )
+                    }
+                }
+
+                // Protection: Check if this reading is part of a finalized bill
+                val readings = repository.getReadingsForTenant(tenantId).first()
+                val isBelongingToFinalizedBill = readings.any { r ->
+                    r.isFinalizedBill && r.meterId == current.meterId &&
+                    (r.billingDate == target.readingDate || (r.currentReading == target.readingValue && r.billingDate >= target.readingDate))
+                }
+
+                val isValueOrDateChanged = parsed.toString() != target.readingValue || current.dateMillis != target.readingDate
+                if (isBelongingToFinalizedBill && isValueOrDateChanged) {
+                    _editReadingState.value = current.copy(
+                        isSaving = false,
+                        error = "This reading is part of a finalized bill and its reading value/date cannot be modified."
+                    )
+                    return@launch
+                }
+
+                val validation = MissingReadingValidator.validate(
+                    newTimestamp = current.dateMillis,
+                    newValue = parsed,
+                    actualReadings = actualPoints,
+                    isEditMode = true,
+                    excludeId = readingId
+                )
+
+                if (validation is MissingReadingValidationResult.Invalid) {
+                    _editReadingState.value = current.copy(
+                        isSaving = false,
+                        error = validation.message
+                    )
+                    return@launch
+                }
+
                 val updatedDr = target.copy(
                     readingValue = parsed.toString(),
+                    readingDate = current.dateMillis,
                     photoPath = current.photoPath,
                     notes = current.notes.trim().takeIf { it.isNotBlank() }
                 )
