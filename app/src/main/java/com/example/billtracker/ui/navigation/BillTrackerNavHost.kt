@@ -21,6 +21,11 @@ import com.example.billtracker.ui.meters.AddEditMeterViewModel
 import com.example.billtracker.ui.meters.CalculateBillScreen
 import com.example.billtracker.ui.meters.CalculateBillViewModel
 import com.example.billtracker.ui.meters.DailyReadingsScreen
+import com.example.billtracker.domain.ai.GgufModelManager
+import com.example.billtracker.domain.ai.LocalDocumentLibrary
+import com.example.billtracker.domain.ai.LocalRagEngine
+import com.example.billtracker.ui.ai.AiModelsScreen
+import com.example.billtracker.ui.ai.DocumentLibraryScreen
 import com.example.billtracker.ui.meters.DailyReadingsViewModel
 import com.example.billtracker.ui.meters.MetersScreen
 import com.example.billtracker.ui.meters.MetersViewModel
@@ -46,6 +51,8 @@ class RepositoryViewModelFactory<T : ViewModel>(
 fun BillTrackerNavHost(
     navController: NavHostController,
     repository: BillTrackerRepository,
+    modelManager: GgufModelManager? = null,
+    documentLibrary: LocalDocumentLibrary? = null,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -121,9 +128,31 @@ fun BillTrackerNavHost(
             SettingsScreen(
                 uiState = uiState,
                 onThemeSelect = viewModel::setThemeMode,
+                onNavigateToAiModels = { navController.navigate(NavRoutes.AI_MODELS) },
+                onNavigateToAiDocuments = { navController.navigate(NavRoutes.AI_DOCUMENTS) },
                 onCurrencySelect = viewModel::setCurrencySymbol,
                 onRecordReadingTimeToggle = viewModel::setRecordReadingTime
             )
+        }
+
+        // Local GGUF AI Models Screen
+        composable(NavRoutes.AI_MODELS) {
+            modelManager?.let { mgr ->
+                AiModelsScreen(
+                    modelManager = mgr,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+        }
+
+        // Local AI Document Library Screen
+        composable(NavRoutes.AI_DOCUMENTS) {
+            documentLibrary?.let { lib ->
+                DocumentLibraryScreen(
+                    documentLibrary = lib,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
         }
 
         // Add / Edit Meter

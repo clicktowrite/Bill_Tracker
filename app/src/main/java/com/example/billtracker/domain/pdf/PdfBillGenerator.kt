@@ -24,7 +24,7 @@ object PdfBillGenerator {
     private const val PAGE_WIDTH = 595 // A4 width at 72 dpi
     private const val PAGE_HEIGHT = 842 // A4 height at 72 dpi
 
-    fun generateAndGetShareUri(
+    fun generateBillFile(
         context: Context,
         reading: MeterReading,
         utilityType: UtilityType,
@@ -32,7 +32,7 @@ object PdfBillGenerator {
         tenant: Tenant?,
         paymentSummary: PaymentSummary,
         currencySymbol: String = "₱"
-    ): Uri? {
+    ): File? {
         val document = PdfDocument()
         val pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, 1).create()
         val page = document.startPage(pageInfo)
@@ -51,7 +51,7 @@ object PdfBillGenerator {
         // Header
         paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         paint.textSize = 22f
-        paint.color = Color.parseColor("#006874") // Primary brand color
+        paint.color = Color.parseColor("#006874")
         canvas.drawText("UTILITY BILL STATEMENT", startX, y, paint)
 
         y += 28f
@@ -153,26 +153,44 @@ object PdfBillGenerator {
 
         document.finishPage(page)
 
-        // Save PDF file in cache
         val pdfDir = File(context.cacheDir, "pdf_bills")
         if (!pdfDir.exists()) pdfDir.mkdirs()
 
         val pdfFile = File(pdfDir, "UtilityBill_${reading.id}.pdf")
-        try {
+        return try {
             val outputStream = FileOutputStream(pdfFile)
             document.writeTo(outputStream)
             outputStream.flush()
             outputStream.close()
             document.close()
+            pdfFile
+        } catch (_: Exception) {
+            document.close()
+            null
+        }
+    }
 
-            return FileProvider.getUriForFile(
+    fun generateAndGetShareUri(
+        context: Context,
+        reading: MeterReading,
+        utilityType: UtilityType,
+        meterName: String,
+        tenant: Tenant?,
+        paymentSummary: PaymentSummary,
+        currencySymbol: String = "₱"
+    ): Uri? {
+        val pdfFile = generateBillFile(
+            context, reading, utilityType, meterName, tenant, paymentSummary, currencySymbol
+        ) ?: return null
+
+        return try {
+            FileProvider.getUriForFile(
                 context,
                 "${context.packageName}.fileprovider",
                 pdfFile
             )
         } catch (_: Exception) {
-            document.close()
-            return null
+            null
         }
     }
 }

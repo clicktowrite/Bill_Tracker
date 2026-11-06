@@ -1,87 +1,102 @@
 package com.example.billtracker.ui.theme
 
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 import com.example.billtracker.domain.model.ThemeMode
 
-private val LightColors = lightColorScheme(
-    primary = PrimaryLight,
-    onPrimary = OnPrimaryLight,
-    primaryContainer = PrimaryContainerLight,
-    onPrimaryContainer = OnPrimaryContainerLight,
-    secondary = SecondaryLight,
-    onSecondary = OnSecondaryLight,
-    secondaryContainer = SecondaryContainerLight,
-    onSecondaryContainer = OnSecondaryContainerLight,
-    tertiary = TertiaryLight,
-    onTertiary = OnTertiaryLight,
-    tertiaryContainer = TertiaryContainerLight,
-    onTertiaryContainer = OnTertiaryContainerLight,
-    error = ErrorLight,
-    onError = OnErrorLight,
-    errorContainer = ErrorContainerLight,
-    onErrorContainer = OnErrorContainerLight,
-    background = BackgroundLight,
-    onBackground = OnBackgroundLight,
-    surface = SurfaceLight,
-    onSurface = OnSurfaceLight,
-    surfaceVariant = SurfaceVariantLight,
-    onSurfaceVariant = OnSurfaceVariantLight,
-    outline = OutlineLight
+// 1. Midnight Dark Color Scheme
+val MidnightColorScheme = darkColorScheme(
+    primary = MidnightPrimary,
+    onPrimary = MidnightOnPrimary,
+    primaryContainer = MidnightPrimaryContainer,
+    onPrimaryContainer = MidnightOnPrimaryContainer,
+    secondary = MidnightSecondary,
+    onSecondary = MidnightOnSecondary,
+    background = MidnightBackground,
+    onBackground = MidnightOnBackground,
+    surface = MidnightSurface,
+    onSurface = MidnightOnSurface,
+    surfaceVariant = MidnightSurfaceVariant,
+    onSurfaceVariant = MidnightOnSurfaceVariant,
+    outline = MidnightOutline,
+    error = ErrorRed,
+    onError = OnErrorWhite
 )
 
-private val DarkColors = darkColorScheme(
-    primary = PrimaryDark,
-    onPrimary = OnPrimaryDark,
-    primaryContainer = PrimaryContainerDark,
-    onPrimaryContainer = OnPrimaryContainerDark,
-    secondary = SecondaryDark,
-    onSecondary = OnSecondaryDark,
-    secondaryContainer = SecondaryContainerDark,
-    onSecondaryContainer = OnSecondaryContainerDark,
-    tertiary = TertiaryDark,
-    onTertiary = OnTertiaryDark,
-    tertiaryContainer = TertiaryContainerDark,
-    onTertiaryContainer = OnTertiaryContainerDark,
-    error = ErrorDark,
-    onError = OnErrorDark,
-    errorContainer = ErrorContainerDark,
-    onErrorContainer = OnErrorContainerDark,
-    background = BackgroundDark,
-    onBackground = OnBackgroundDark,
-    surface = SurfaceDark,
-    onSurface = OnSurfaceDark,
-    surfaceVariant = SurfaceVariantDark,
-    onSurfaceVariant = OnSurfaceVariantDark,
-    outline = OutlineDark
+// 2. Graphite Dark Color Scheme
+val GraphiteColorScheme = darkColorScheme(
+    primary = GraphitePrimary,
+    onPrimary = GraphiteOnPrimary,
+    primaryContainer = GraphitePrimaryContainer,
+    onPrimaryContainer = GraphiteOnPrimaryContainer,
+    secondary = GraphiteSecondary,
+    onSecondary = GraphiteOnSecondary,
+    background = GraphiteBackground,
+    onBackground = GraphiteOnBackground,
+    surface = GraphiteSurface,
+    onSurface = GraphiteOnSurface,
+    surfaceVariant = GraphiteSurfaceVariant,
+    onSurfaceVariant = GraphiteOnSurfaceVariant,
+    outline = GraphiteOutline,
+    error = ErrorRed,
+    onError = OnErrorWhite
+)
+
+// 3. Clean Light Color Scheme
+val CleanColorScheme = lightColorScheme(
+    primary = CleanPrimary,
+    onPrimary = CleanOnPrimary,
+    primaryContainer = CleanPrimaryContainer,
+    onPrimaryContainer = CleanOnPrimaryContainer,
+    secondary = CleanSecondary,
+    onSecondary = CleanOnSecondary,
+    background = CleanBackground,
+    onBackground = CleanOnBackground,
+    surface = CleanSurface,
+    onSurface = CleanOnSurface,
+    surfaceVariant = CleanSurfaceVariant,
+    onSurfaceVariant = CleanOnSurfaceVariant,
+    outline = CleanOutline,
+    error = ErrorRed,
+    onError = OnErrorWhite,
+    errorContainer = ErrorContainerRed,
+    onErrorContainer = OnErrorContainerRed
+)
+
+// 4. Warm Light Color Scheme
+val WarmColorScheme = lightColorScheme(
+    primary = WarmPrimary,
+    onPrimary = WarmOnPrimary,
+    primaryContainer = WarmPrimaryContainer,
+    onPrimaryContainer = WarmOnPrimaryContainer,
+    secondary = WarmSecondary,
+    onSecondary = WarmOnSecondary,
+    background = WarmBackground,
+    onBackground = WarmOnBackground,
+    surface = WarmSurface,
+    onSurface = WarmOnSurface,
+    surfaceVariant = WarmSurfaceVariant,
+    onSurfaceVariant = WarmOnSurfaceVariant,
+    outline = WarmOutline,
+    error = ErrorRed,
+    onError = OnErrorWhite,
+    errorContainer = ErrorContainerRed,
+    onErrorContainer = OnErrorContainerRed
 )
 
 @Composable
 fun BillTrackerTheme(
-    themeMode: ThemeMode = ThemeMode.SYSTEM,
-    dynamicColor: Boolean = true,
+    themeMode: ThemeMode = ThemeMode.CLEAN,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val darkTheme = when (themeMode) {
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
-        ThemeMode.LIGHT -> false
-        ThemeMode.DARK -> true
-    }
-
-    val context = LocalContext.current
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColors
-        else -> LightColors
+    val colorScheme = when (themeMode) {
+        ThemeMode.MIDNIGHT -> MidnightColorScheme
+        ThemeMode.GRAPHITE -> GraphiteColorScheme
+        ThemeMode.CLEAN -> CleanColorScheme
+        ThemeMode.WARM -> WarmColorScheme
     }
 
     MaterialTheme(

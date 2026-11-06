@@ -13,8 +13,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.material.icons.filled.AddCard
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,10 +38,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.billtracker.domain.formatter.CurrencyFormatter
 import com.example.billtracker.domain.model.Payment
+import com.example.billtracker.domain.pdf.PdfBillGenerator
 import com.example.billtracker.ui.components.BillSummaryCard
 import com.example.billtracker.ui.components.ConfirmDeleteDialog
 import com.example.billtracker.ui.components.PaymentStatusBadge
@@ -59,6 +65,7 @@ fun BillDetailScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showRecordPaymentDialog by remember { mutableStateOf(false) }
     val reading = uiState.reading
+    val context = LocalContext.current
     val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
     val paymentSummary = uiState.paymentSummary
 
@@ -75,6 +82,36 @@ fun BillDetailScreen(
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = {
+                            if (reading != null) {
+                                val uri = PdfBillGenerator.generateAndGetShareUri(
+                                    context = context,
+                                    reading = reading,
+                                    utilityType = uiState.utilityType,
+                                    meterName = uiState.meterName,
+                                    tenant = uiState.tenant,
+                                    paymentSummary = paymentSummary,
+                                    currencySymbol = uiState.currencySymbol
+                                )
+                                if (uri != null) {
+                                    val intent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "application/pdf"
+                                        putExtra(Intent.EXTRA_STREAM, uri)
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    context.startActivity(Intent.createChooser(intent, "Share Utility Bill PDF"))
+                                } else {
+                                    Toast.makeText(context, "Failed to generate PDF.", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PictureAsPdf,
+                            contentDescription = "Export PDF"
+                        )
+                    }
                     IconButton(onClick = { showDeleteDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.Delete,

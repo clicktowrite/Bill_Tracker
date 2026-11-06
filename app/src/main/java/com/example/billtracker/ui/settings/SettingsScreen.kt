@@ -19,7 +19,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.AlertDialog
@@ -62,6 +64,8 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     uiState: SettingsUiState,
     onThemeSelect: (ThemeMode) -> Unit,
+    onNavigateToAiModels: () -> Unit,
+    onNavigateToAiDocuments: () -> Unit,
     onCurrencySelect: (String) -> Unit,
     onRecordReadingTimeToggle: (Boolean) -> Unit
 ) {
@@ -124,10 +128,11 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Theme Setting
+            // Theme Setting: 4 Selectable Themes (Midnight, Graphite, Clean, Warm)
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.large
+                shape = MaterialTheme.shapes.large,
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -144,45 +149,152 @@ fun SettingsScreen(
                         )
                     }
 
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Choose from 4 curated dark and light fintech themes:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    // Dark Themes Section
+                    Text(
+                        text = "Dark Themes",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onThemeSelect(ThemeMode.SYSTEM) }
+                            .clickable { onThemeSelect(ThemeMode.MIDNIGHT) }
                     ) {
                         RadioButton(
-                            selected = uiState.themeMode == ThemeMode.SYSTEM,
-                            onClick = { onThemeSelect(ThemeMode.SYSTEM) }
+                            selected = uiState.themeMode == ThemeMode.MIDNIGHT,
+                            onClick = { onThemeSelect(ThemeMode.MIDNIGHT) }
                         )
-                        Text("Follow System")
+                        Column {
+                            Text("Midnight", fontWeight = FontWeight.SemiBold)
+                            Text("Deep navy background with blue accents", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onThemeSelect(ThemeMode.LIGHT) }
+                            .clickable { onThemeSelect(ThemeMode.GRAPHITE) }
                     ) {
                         RadioButton(
-                            selected = uiState.themeMode == ThemeMode.LIGHT,
-                            onClick = { onThemeSelect(ThemeMode.LIGHT) }
+                            selected = uiState.themeMode == ThemeMode.GRAPHITE,
+                            onClick = { onThemeSelect(ThemeMode.GRAPHITE) }
                         )
-                        Text("Light Mode")
+                        Column {
+                            Text("Graphite", fontWeight = FontWeight.SemiBold)
+                            Text("Charcoal background with emerald accents", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Light Themes Section
+                    Text(
+                        text = "Light Themes",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onThemeSelect(ThemeMode.CLEAN) }
+                    ) {
+                        RadioButton(
+                            selected = uiState.themeMode == ThemeMode.CLEAN,
+                            onClick = { onThemeSelect(ThemeMode.CLEAN) }
+                        )
+                        Column {
+                            Text("Clean", fontWeight = FontWeight.SemiBold)
+                            Text("Crisp white background with soft blue accents", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onThemeSelect(ThemeMode.DARK) }
+                            .clickable { onThemeSelect(ThemeMode.WARM) }
                     ) {
                         RadioButton(
-                            selected = uiState.themeMode == ThemeMode.DARK,
-                            onClick = { onThemeSelect(ThemeMode.DARK) }
+                            selected = uiState.themeMode == ThemeMode.WARM,
+                            onClick = { onThemeSelect(ThemeMode.WARM) }
                         )
-                        Text("Dark Mode")
+                        Column {
+                            Text("Warm", fontWeight = FontWeight.SemiBold)
+                            Text("Warm off-white background with muted green accents", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+
+            // Local AI Management Section
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large,
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Memory,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.padding(4.dp))
+                        Text(
+                            text = "Local AI & Document Intelligence",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Manage offline GGUF AI models and customer billing documents for local RAG intelligence.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Button(
+                            onClick = onNavigateToAiModels,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(imageVector = Icons.Default.Memory, contentDescription = null)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("AI Models", maxLines = 1, softWrap = false)
+                        }
+
+                        OutlinedButton(
+                            onClick = onNavigateToAiDocuments,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(imageVector = Icons.Default.Description, contentDescription = null)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("AI Library", maxLines = 1, softWrap = false)
+                        }
                     }
                 }
             }

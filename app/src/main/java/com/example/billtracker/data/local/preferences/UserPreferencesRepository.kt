@@ -22,12 +22,8 @@ class UserPreferencesRepository(private val context: Context) {
     }
 
     val themeModeFlow: Flow<ThemeMode> = context.dataStore.data.map { preferences ->
-        val name = preferences[PreferencesKeys.THEME_MODE] ?: ThemeMode.SYSTEM.name
-        try {
-            ThemeMode.valueOf(name)
-        } catch (_: Exception) {
-            ThemeMode.SYSTEM
-        }
+        val name = preferences[PreferencesKeys.THEME_MODE]
+        ThemeMode.fromString(name)
     }
 
     val currencySymbolFlow: Flow<String> = context.dataStore.data.map { preferences ->
