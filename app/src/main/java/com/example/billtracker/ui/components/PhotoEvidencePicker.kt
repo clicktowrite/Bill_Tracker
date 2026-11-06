@@ -42,7 +42,8 @@ fun PhotoEvidencePicker(
     photoPath: String?,
     onPhotoPathChange: (String?) -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    allowCameraCapture: Boolean = true
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -110,15 +111,17 @@ fun PhotoEvidencePicker(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        OutlinedButton(
-                            onClick = { cameraLauncher.launch(null) },
-                            enabled = enabled,
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
-                        ) {
-                            Icon(imageVector = Icons.Default.AddAPhoto, contentDescription = null)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Retake", maxLines = 1, softWrap = false)
+                        if (allowCameraCapture) {
+                            OutlinedButton(
+                                onClick = { cameraLauncher.launch(null) },
+                                enabled = enabled,
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                            ) {
+                                Icon(imageVector = Icons.Default.AddAPhoto, contentDescription = null)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Retake", maxLines = 1, softWrap = false)
+                            }
                         }
 
                         OutlinedButton(
@@ -156,15 +159,17 @@ fun PhotoEvidencePicker(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        OutlinedButton(
-                            onClick = { cameraLauncher.launch(null) },
-                            enabled = enabled,
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
-                        ) {
-                            Icon(imageVector = Icons.Default.AddAPhoto, contentDescription = null)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Take Photo", maxLines = 1, softWrap = false)
+                        if (allowCameraCapture) {
+                            OutlinedButton(
+                                onClick = { cameraLauncher.launch(null) },
+                                enabled = enabled,
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                            ) {
+                                Icon(imageVector = Icons.Default.AddAPhoto, contentDescription = null)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Take Photo", maxLines = 1, softWrap = false)
+                            }
                         }
 
                         OutlinedButton(
