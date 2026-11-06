@@ -44,4 +44,7 @@ object NavRoutes {
     const val BILL_DETAIL = "bill_detail/{readingId}"
     fun createBillDetailRoute(readingId: Long): String =
         "bill_detail/$readingId"
+
+    const val AI_MODELS = "ai_models"
+    const val AI_DOCUMENTS = "ai_documents"
 }

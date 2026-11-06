@@ -15,6 +15,12 @@ import androidx.navigation.compose.rememberNavController
 import com.example.billtracker.domain.model.ThemeMode
 import com.example.billtracker.ui.navigation.BillTrackerBottomBar
 import com.example.billtracker.ui.navigation.BillTrackerNavHost
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.remember
+import com.example.billtracker.domain.ai.GgufModelManager
+import com.example.billtracker.domain.ai.LocalDocumentLibrary
+import com.example.billtracker.domain.ai.LocalRagEngine
+import com.example.billtracker.ui.components.FloatingAiAssistantOverlay
 import com.example.billtracker.ui.navigation.NavRoutes
 import com.example.billtracker.ui.theme.BillTrackerTheme
 
@@ -28,7 +34,15 @@ class MainActivity : ComponentActivity() {
         val repository = app.repository
 
         setContent {
-            val themeMode by repository.themeModeFlow.collectAsState(initial = ThemeMode.SYSTEM)
+            val themeMode by repository.themeModeFlow.collectAsState(initial = ThemeMode.CLEAN)
+
+            // Local AI Architecture (isolated from billing core)
+            val modelManager = remember { GgufModelManager(applicationContext) }
+            val documentLibrary = remember { LocalDocumentLibrary(applicationContext) }
+            val ragEngine = remember { LocalRagEngine(repository, documentLibrary, modelManager.inferenceEngine) }
+            val activeModelId by modelManager.activeModelId.collectAsState()
+            val models by modelManager.models.collectAsState()
+            val activeModel = models.find { it.id == activeModelId }
 
             BillTrackerTheme(themeMode = themeMode) {
                 val navController = rememberNavController()
@@ -39,6 +53,13 @@ class MainActivity : ComponentActivity() {
                     NavRoutes.TENANTS,
                     NavRoutes.METERS,
                     NavRoutes.SETTINGS
+                )
+
+                val showFloatingAssistant = currentRoute in listOf(
+                    NavRoutes.TENANTS,
+                    NavRoutes.METERS,
+                    NavRoutes.SETTINGS,
+                    NavRoutes.TENANT_DETAIL
                 )
 
                 Scaffold(
@@ -60,11 +81,26 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 ) { innerPadding ->
-                    BillTrackerNavHost(
-                        navController = navController,
-                        repository = repository,
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        BillTrackerNavHost(
+                            navController = navController,
+                            repository = repository,
+                            modelManager = modelManager,
+                            documentLibrary = documentLibrary,
+                            modifier = Modifier.padding(innerPadding)
+                        )
+
+                        if (showFloatingAssistant) {
+                            FloatingAiAssistantOverlay(
+                                activeModel = activeModel,
+                                ragEngine = ragEngine,
+                                onOpenModelManager = {
+                                    navController.navigate(NavRoutes.AI_MODELS)
+                                },
+                                modifier = Modifier.padding(innerPadding)
+                            )
+                        }
+                    }
                 }
             }
         }
