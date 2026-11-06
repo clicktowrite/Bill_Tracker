@@ -87,6 +87,7 @@ import com.example.billtracker.domain.formatter.ReadingFormatter
 import com.example.billtracker.domain.model.UtilityType
 import com.example.billtracker.ui.components.ConfirmDeleteDialog
 import com.example.billtracker.ui.components.EmptyState
+import com.example.billtracker.ui.components.PhotoEvidencePicker
 import com.example.billtracker.ui.theme.ElectricityYellow
 import com.example.billtracker.ui.theme.WaterBlue
 import java.text.SimpleDateFormat
@@ -110,6 +111,7 @@ fun DailyReadingsScreen(
     onDestinationTenantSelect: (Long?) -> Unit,
     onConfirmClosePeriod: () -> Unit,
     onDismissClosePeriodDialog: () -> Unit,
+    onPhotoPathChange: (String?) -> Unit,
     onNotesChange: (String) -> Unit,
     onLogClick: () -> Unit,
     onToggleForecast: (Boolean) -> Unit,
@@ -556,16 +558,6 @@ fun DailyReadingsScreen(
                     }
                 }
 
-                // Priority 2: Permitted Billing Cycle Date Range Banner
-                if (uiState.cycleDateRangeText.isNotBlank()) {
-                    Text(
-                        text = uiState.cycleDateRangeText,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-
                 // Animated Temporary Success Message
                 AnimatedVisibility(
                     visible = uiState.successMessage != null,
@@ -726,6 +718,13 @@ fun DailyReadingsScreen(
                     enabled = !uiState.isSaving,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
+                )
+
+                // Optional Meter Reading Photo Evidence
+                PhotoEvidencePicker(
+                    photoPath = uiState.photoPath,
+                    onPhotoPathChange = onPhotoPathChange,
+                    enabled = !uiState.isSaving
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
