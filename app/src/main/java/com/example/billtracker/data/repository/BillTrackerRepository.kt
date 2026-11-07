@@ -10,6 +10,7 @@ import com.example.billtracker.data.local.entity.TenantEntity
 import com.example.billtracker.data.local.preferences.UserPreferencesRepository
 import com.example.billtracker.domain.calculator.BillingCalculator
 import com.example.billtracker.domain.model.DailyReading
+import com.example.billtracker.domain.model.DarkModePreference
 import com.example.billtracker.domain.model.Meter
 import com.example.billtracker.domain.model.MeterReading
 import com.example.billtracker.domain.model.Payment
@@ -34,10 +35,12 @@ class BillTrackerRepository(
 
     // Preferences
     val themeModeFlow: Flow<ThemeMode> = preferencesRepository.themeModeFlow
+    val darkModePreferenceFlow: Flow<DarkModePreference> = preferencesRepository.darkModePreferenceFlow
     val currencySymbolFlow: Flow<String> = preferencesRepository.currencySymbolFlow
     val recordReadingTimeFlow: Flow<Boolean> = preferencesRepository.recordReadingTimeFlow
 
     suspend fun setThemeMode(mode: ThemeMode) = preferencesRepository.setThemeMode(mode)
+    suspend fun setDarkModePreference(preference: DarkModePreference) = preferencesRepository.setDarkModePreference(preference)
     suspend fun setCurrencySymbol(symbol: String) = preferencesRepository.setCurrencySymbol(symbol)
     suspend fun setRecordReadingTime(enabled: Boolean) = preferencesRepository.setRecordReadingTime(enabled)
 

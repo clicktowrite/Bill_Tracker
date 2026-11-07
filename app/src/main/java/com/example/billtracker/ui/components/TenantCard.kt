@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.billtracker.domain.model.Tenant
 import com.example.billtracker.ui.theme.ElectricityYellow
+import com.example.billtracker.ui.theme.LocalThemeStyleConfig
 import com.example.billtracker.ui.theme.WaterBlue
 
 @Composable
@@ -53,12 +54,15 @@ fun TenantCard(
         else -> "Electricity · kWh"
     }
 
+    val styleConfig = LocalThemeStyleConfig.current
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.large,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = styleConfig.cardShape,
+        border = styleConfig.cardBorder,
+        elevation = CardDefaults.cardElevation(defaultElevation = styleConfig.elevationDp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
