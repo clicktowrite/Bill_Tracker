@@ -128,6 +128,7 @@ fun BillTrackerNavHost(
             SettingsScreen(
                 uiState = uiState,
                 onThemeSelect = viewModel::setThemeMode,
+                onDarkModeSelect = viewModel::setDarkModePreference,
                 onNavigateToAiModels = { navController.navigate(NavRoutes.AI_MODELS) },
                 onNavigateToAiDocuments = { navController.navigate(NavRoutes.AI_DOCUMENTS) },
                 onCurrencySelect = viewModel::setCurrencySymbol,

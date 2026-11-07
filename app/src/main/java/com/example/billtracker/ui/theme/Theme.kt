@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -33,8 +34,8 @@ val LocalThemeStyleConfig = staticCompositionLocalOf {
     )
 }
 
-// 1. Futuristic Dark Color Scheme
-val FuturisticColorScheme = darkColorScheme(
+// 1. Futuristic Dark and Light Color Schemes
+val FuturisticDarkColorScheme = darkColorScheme(
     primary = FuturisticPrimary,
     onPrimary = FuturisticOnPrimary,
     primaryContainer = FuturisticPrimaryContainer,
@@ -49,11 +50,36 @@ val FuturisticColorScheme = darkColorScheme(
     onSurfaceVariant = FuturisticOnSurfaceVariant,
     outline = FuturisticOutline,
     error = ErrorRed,
-    onError = OnErrorWhite
+    onError = OnErrorWhite,
+    errorContainer = ErrorContainerRed,
+    onErrorContainer = OnErrorContainerRed
 )
 
-// 2. Liquid Glass Dark Color Scheme
-val LiquidGlassColorScheme = darkColorScheme(
+val FuturisticLightColorScheme = lightColorScheme(
+    primary = FuturisticLightPrimary,
+    onPrimary = FuturisticLightOnPrimary,
+    primaryContainer = FuturisticLightPrimaryContainer,
+    onPrimaryContainer = FuturisticLightOnPrimaryContainer,
+    secondary = FuturisticLightSecondary,
+    onSecondary = FuturisticLightOnSecondary,
+    background = FuturisticLightBackground,
+    onBackground = FuturisticLightOnBackground,
+    surface = FuturisticLightSurface,
+    onSurface = FuturisticLightOnSurface,
+    surfaceVariant = FuturisticLightSurfaceVariant,
+    onSurfaceVariant = FuturisticLightOnSurfaceVariant,
+    outline = FuturisticLightOutline,
+    error = ErrorRed,
+    onError = OnErrorWhite,
+    errorContainer = ErrorContainerRed,
+    onErrorContainer = OnErrorContainerRed
+)
+
+// Backwards compatibility alias
+val FuturisticColorScheme = FuturisticDarkColorScheme
+
+// 2. Liquid Glass Dark and Light Color Schemes
+val LiquidGlassDarkColorScheme = darkColorScheme(
     primary = LiquidGlassPrimary,
     onPrimary = LiquidGlassOnPrimary,
     primaryContainer = LiquidGlassPrimaryContainer,
@@ -68,11 +94,36 @@ val LiquidGlassColorScheme = darkColorScheme(
     onSurfaceVariant = LiquidGlassOnSurfaceVariant,
     outline = LiquidGlassOutline,
     error = ErrorRed,
-    onError = OnErrorWhite
+    onError = OnErrorWhite,
+    errorContainer = ErrorContainerRed,
+    onErrorContainer = OnErrorContainerRed
 )
 
-// 3. Claymorphism Light Color Scheme
-val ClaymorphismColorScheme = lightColorScheme(
+val LiquidGlassLightColorScheme = lightColorScheme(
+    primary = LiquidGlassLightPrimary,
+    onPrimary = LiquidGlassLightOnPrimary,
+    primaryContainer = LiquidGlassLightPrimaryContainer,
+    onPrimaryContainer = LiquidGlassLightOnPrimaryContainer,
+    secondary = LiquidGlassLightSecondary,
+    onSecondary = LiquidGlassLightOnSecondary,
+    background = LiquidGlassLightBackground,
+    onBackground = LiquidGlassLightOnBackground,
+    surface = LiquidGlassLightSurface,
+    onSurface = LiquidGlassLightOnSurface,
+    surfaceVariant = LiquidGlassLightSurfaceVariant,
+    onSurfaceVariant = LiquidGlassLightOnSurfaceVariant,
+    outline = LiquidGlassLightOutline,
+    error = ErrorRed,
+    onError = OnErrorWhite,
+    errorContainer = ErrorContainerRed,
+    onErrorContainer = OnErrorContainerRed
+)
+
+// Backwards compatibility alias
+val LiquidGlassColorScheme = LiquidGlassDarkColorScheme
+
+// 3. Claymorphism Light and Dark Color Schemes
+val ClaymorphismLightColorScheme = lightColorScheme(
     primary = ClaymorphismPrimary,
     onPrimary = ClaymorphismOnPrimary,
     primaryContainer = ClaymorphismPrimaryContainer,
@@ -92,8 +143,31 @@ val ClaymorphismColorScheme = lightColorScheme(
     onErrorContainer = OnErrorContainerRed
 )
 
-// 4. Glassmorphism Light Color Scheme
-val GlassmorphismColorScheme = lightColorScheme(
+val ClaymorphismDarkColorScheme = darkColorScheme(
+    primary = ClaymorphismDarkPrimary,
+    onPrimary = ClaymorphismDarkOnPrimary,
+    primaryContainer = ClaymorphismDarkPrimaryContainer,
+    onPrimaryContainer = ClaymorphismDarkOnPrimaryContainer,
+    secondary = ClaymorphismDarkSecondary,
+    onSecondary = ClaymorphismDarkOnSecondary,
+    background = ClaymorphismDarkBackground,
+    onBackground = ClaymorphismDarkOnBackground,
+    surface = ClaymorphismDarkSurface,
+    onSurface = ClaymorphismDarkOnSurface,
+    surfaceVariant = ClaymorphismDarkSurfaceVariant,
+    onSurfaceVariant = ClaymorphismDarkOnSurfaceVariant,
+    outline = ClaymorphismDarkOutline,
+    error = ErrorRed,
+    onError = OnErrorWhite,
+    errorContainer = ErrorContainerRed,
+    onErrorContainer = OnErrorContainerRed
+)
+
+// Backwards compatibility alias
+val ClaymorphismColorScheme = ClaymorphismLightColorScheme
+
+// 4. Glassmorphism Light and Dark Color Schemes
+val GlassmorphismLightColorScheme = lightColorScheme(
     primary = GlassmorphismPrimary,
     onPrimary = GlassmorphismOnPrimary,
     primaryContainer = GlassmorphismPrimaryContainer,
@@ -112,6 +186,29 @@ val GlassmorphismColorScheme = lightColorScheme(
     errorContainer = ErrorContainerRed,
     onErrorContainer = OnErrorContainerRed
 )
+
+val GlassmorphismDarkColorScheme = darkColorScheme(
+    primary = GlassmorphismDarkPrimary,
+    onPrimary = GlassmorphismDarkOnPrimary,
+    primaryContainer = GlassmorphismDarkPrimaryContainer,
+    onPrimaryContainer = GlassmorphismDarkOnPrimaryContainer,
+    secondary = GlassmorphismDarkSecondary,
+    onSecondary = GlassmorphismDarkOnSecondary,
+    background = GlassmorphismDarkBackground,
+    onBackground = GlassmorphismDarkOnBackground,
+    surface = GlassmorphismDarkSurface,
+    onSurface = GlassmorphismDarkOnSurface,
+    surfaceVariant = GlassmorphismDarkSurfaceVariant,
+    onSurfaceVariant = GlassmorphismDarkOnSurfaceVariant,
+    outline = GlassmorphismDarkOutline,
+    error = ErrorRed,
+    onError = OnErrorWhite,
+    errorContainer = ErrorContainerRed,
+    onErrorContainer = OnErrorContainerRed
+)
+
+// Backwards compatibility alias
+val GlassmorphismColorScheme = GlassmorphismLightColorScheme
 
 // Theme-specific shapes
 val FuturisticShapes = Shapes(
@@ -145,64 +242,109 @@ val GlassmorphismShapes = Shapes(
 @Composable
 fun BillTrackerTheme(
     themeMode: ThemeMode = ThemeMode.GLASSMORPHISM,
+    darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val (colorScheme, shapes, styleConfig) = when (themeMode) {
-        ThemeMode.FUTURISTIC -> Triple(
-            FuturisticColorScheme,
-            FuturisticShapes,
-            ThemeStyleConfig(
-                cardShape = RoundedCornerShape(10.dp),
-                buttonShape = RoundedCornerShape(6.dp),
-                cardBorder = BorderStroke(1.dp, FuturisticOutline.copy(alpha = 0.4f)),
-                elevationDp = 0.dp,
-                headerGradient = Brush.horizontalGradient(
-                    listOf(Color(0xFF004D5A), Color(0xFF240046))
+        ThemeMode.FUTURISTIC -> {
+            val scheme = if (darkTheme) FuturisticDarkColorScheme else FuturisticLightColorScheme
+            val borderStroke = if (darkTheme) {
+                BorderStroke(1.dp, FuturisticOutline.copy(alpha = 0.4f))
+            } else {
+                BorderStroke(1.dp, FuturisticLightOutline.copy(alpha = 0.35f))
+            }
+            val headerGrad = if (darkTheme) {
+                Brush.horizontalGradient(listOf(Color(0xFF004D5A), Color(0xFF240046)))
+            } else {
+                Brush.horizontalGradient(listOf(Color(0xFFB2EBF2), Color(0xFFE1BEE7)))
+            }
+            Triple(
+                scheme,
+                FuturisticShapes,
+                ThemeStyleConfig(
+                    cardShape = RoundedCornerShape(10.dp),
+                    buttonShape = RoundedCornerShape(6.dp),
+                    cardBorder = borderStroke,
+                    elevationDp = 0.dp,
+                    headerGradient = headerGrad
                 )
             )
-        )
-        ThemeMode.LIQUID_GLASS -> Triple(
-            LiquidGlassColorScheme,
-            LiquidGlassShapes,
-            ThemeStyleConfig(
-                cardShape = RoundedCornerShape(22.dp),
-                buttonShape = RoundedCornerShape(18.dp),
-                cardBorder = BorderStroke(1.dp, LiquidGlassOutline.copy(alpha = 0.3f)),
-                elevationDp = 4.dp,
-                headerGradient = Brush.verticalGradient(
-                    listOf(Color(0xFF0C4A6E), Color(0xFF081220))
-                ),
-                isGlassOrClay = true
-            )
-        )
-        ThemeMode.CLAYMORPHISM -> Triple(
-            ClaymorphismColorScheme,
-            ClaymorphismShapes,
-            ThemeStyleConfig(
-                cardShape = RoundedCornerShape(28.dp),
-                buttonShape = RoundedCornerShape(24.dp),
-                cardBorder = BorderStroke(1.5.dp, Color(0xFFFFFFFF).copy(alpha = 0.8f)),
-                elevationDp = 6.dp,
-                headerGradient = Brush.horizontalGradient(
-                    listOf(Color(0xFFDED9F7), Color(0xFFC7F9CC))
-                ),
-                isGlassOrClay = true
-            )
-        )
-        ThemeMode.GLASSMORPHISM -> Triple(
-            GlassmorphismColorScheme,
-            GlassmorphismShapes,
-            ThemeStyleConfig(
-                cardShape = RoundedCornerShape(18.dp),
-                buttonShape = RoundedCornerShape(14.dp),
-                cardBorder = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                elevationDp = 2.dp,
-                headerGradient = Brush.linearGradient(
-                    listOf(Color(0xFFDBEAFE), Color(0xFFE0E7FF))
+        }
+        ThemeMode.LIQUID_GLASS -> {
+            val scheme = if (darkTheme) LiquidGlassDarkColorScheme else LiquidGlassLightColorScheme
+            val borderStroke = if (darkTheme) {
+                BorderStroke(1.dp, LiquidGlassOutline.copy(alpha = 0.3f))
+            } else {
+                BorderStroke(1.dp, LiquidGlassLightOutline.copy(alpha = 0.25f))
+            }
+            val headerGrad = if (darkTheme) {
+                Brush.verticalGradient(listOf(Color(0xFF0C4A6E), Color(0xFF081220)))
+            } else {
+                Brush.verticalGradient(listOf(Color(0xFFBAE6FD), Color(0xFFF0F9FF)))
+            }
+            Triple(
+                scheme,
+                LiquidGlassShapes,
+                ThemeStyleConfig(
+                    cardShape = RoundedCornerShape(22.dp),
+                    buttonShape = RoundedCornerShape(18.dp),
+                    cardBorder = borderStroke,
+                    elevationDp = 4.dp,
+                    headerGradient = headerGrad,
+                    isGlassOrClay = true
                 )
             )
-        )
+        }
+        ThemeMode.CLAYMORPHISM -> {
+            val scheme = if (darkTheme) ClaymorphismDarkColorScheme else ClaymorphismLightColorScheme
+            val borderStroke = if (darkTheme) {
+                BorderStroke(1.5.dp, Color(0xFF343648).copy(alpha = 0.9f))
+            } else {
+                BorderStroke(1.5.dp, Color(0xFFFFFFFF).copy(alpha = 0.8f))
+            }
+            val headerGrad = if (darkTheme) {
+                Brush.horizontalGradient(listOf(Color(0xFF2D265A), Color(0xFF133E32)))
+            } else {
+                Brush.horizontalGradient(listOf(Color(0xFFDED9F7), Color(0xFFC7F9CC)))
+            }
+            Triple(
+                scheme,
+                ClaymorphismShapes,
+                ThemeStyleConfig(
+                    cardShape = RoundedCornerShape(28.dp),
+                    buttonShape = RoundedCornerShape(24.dp),
+                    cardBorder = borderStroke,
+                    elevationDp = 6.dp,
+                    headerGradient = headerGrad,
+                    isGlassOrClay = true
+                )
+            )
+        }
+        ThemeMode.GLASSMORPHISM -> {
+            val scheme = if (darkTheme) GlassmorphismDarkColorScheme else GlassmorphismLightColorScheme
+            val borderStroke = if (darkTheme) {
+                BorderStroke(1.dp, GlassmorphismDarkOutline.copy(alpha = 0.5f))
+            } else {
+                BorderStroke(1.dp, Color(0xFFE2E8F0))
+            }
+            val headerGrad = if (darkTheme) {
+                Brush.linearGradient(listOf(Color(0xFF1E293B), Color(0xFF0F172A)))
+            } else {
+                Brush.linearGradient(listOf(Color(0xFFDBEAFE), Color(0xFFE0E7FF)))
+            }
+            Triple(
+                scheme,
+                GlassmorphismShapes,
+                ThemeStyleConfig(
+                    cardShape = RoundedCornerShape(18.dp),
+                    buttonShape = RoundedCornerShape(14.dp),
+                    cardBorder = borderStroke,
+                    elevationDp = 2.dp,
+                    headerGradient = headerGrad
+                )
+            )
+        }
     }
 
     CompositionLocalProvider(LocalThemeStyleConfig provides styleConfig) {

@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -12,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.billtracker.domain.model.DarkModePreference
 import com.example.billtracker.domain.model.ThemeMode
 import com.example.billtracker.ui.navigation.BillTrackerBottomBar
 import com.example.billtracker.ui.navigation.BillTrackerNavHost
@@ -35,6 +37,13 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val themeMode by repository.themeModeFlow.collectAsState(initial = ThemeMode.GLASSMORPHISM)
+            val darkModePreference by repository.darkModePreferenceFlow.collectAsState(initial = DarkModePreference.SYSTEM)
+            val systemInDark = isSystemInDarkTheme()
+            val useDarkTheme = when (darkModePreference) {
+                DarkModePreference.SYSTEM -> systemInDark
+                DarkModePreference.LIGHT -> false
+                DarkModePreference.DARK -> true
+            }
 
             // Local AI Architecture (isolated from billing core)
             val modelManager = remember { GgufModelManager(applicationContext) }
@@ -44,7 +53,10 @@ class MainActivity : ComponentActivity() {
             val models by modelManager.models.collectAsState()
             val activeModel = models.find { it.id == activeModelId }
 
-            BillTrackerTheme(themeMode = themeMode) {
+            BillTrackerTheme(
+                themeMode = themeMode,
+                darkTheme = useDarkTheme
+            ) {
                 val navController = rememberNavController()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route

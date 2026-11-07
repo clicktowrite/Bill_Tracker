@@ -2,7 +2,8 @@ package com.example.billtracker.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// 1. FUTURISTIC / FICTIONAL UI (Sci-fi control dashboard, neon cyan, electric violet, deep dark)
+// 1. FUTURISTIC / FICTIONAL UI (Sci-fi control dashboard, neon cyan, electric violet)
+// Dark Mode
 val FuturisticBackground = Color(0xFF060913)
 val FuturisticSurface = Color(0xFF0D1322)
 val FuturisticSurfaceVariant = Color(0xFF141D33)
@@ -17,7 +18,23 @@ val FuturisticOnSurface = Color(0xFFF1F5F9)
 val FuturisticOnSurfaceVariant = Color(0xFF94A3B8)
 val FuturisticOutline = Color(0xFF00F2FE).copy(alpha = 0.5f)
 
-// 2. LIQUID GLASS UI (Fluid translucent deep-ocean surfaces, aqua highlights, soft depth)
+// Light Mode
+val FuturisticLightBackground = Color(0xFFF0F4F8)
+val FuturisticLightSurface = Color(0xFFFFFFFF)
+val FuturisticLightSurfaceVariant = Color(0xFFE1E8F0)
+val FuturisticLightPrimary = Color(0xFF007A87)
+val FuturisticLightOnPrimary = Color(0xFFFFFFFF)
+val FuturisticLightPrimaryContainer = Color(0xFFB2EBF2)
+val FuturisticLightOnPrimaryContainer = Color(0xFF00363D)
+val FuturisticLightSecondary = Color(0xFF7B1FA2)
+val FuturisticLightOnSecondary = Color(0xFFFFFFFF)
+val FuturisticLightOnBackground = Color(0xFF0F172A)
+val FuturisticLightOnSurface = Color(0xFF0F172A)
+val FuturisticLightOnSurfaceVariant = Color(0xFF475569)
+val FuturisticLightOutline = Color(0xFF007A87).copy(alpha = 0.4f)
+
+// 2. LIQUID GLASS UI (Fluid translucent deep-ocean / fresh aqua surfaces)
+// Dark Mode
 val LiquidGlassBackground = Color(0xFF081220)
 val LiquidGlassSurface = Color(0xFF0E1E36)
 val LiquidGlassSurfaceVariant = Color(0xFF162B4D)
@@ -32,7 +49,23 @@ val LiquidGlassOnSurface = Color(0xFFF0F9FF)
 val LiquidGlassOnSurfaceVariant = Color(0xFF7DD3FC)
 val LiquidGlassOutline = Color(0xFF38BDF8).copy(alpha = 0.35f)
 
-// 3. CLAYMORPHISM UI (Soft 3D tactile shapes, warm clay canvas, pastel friendly accents)
+// Light Mode
+val LiquidGlassLightBackground = Color(0xFFF0F9FF)
+val LiquidGlassLightSurface = Color(0xFFFFFFFF)
+val LiquidGlassLightSurfaceVariant = Color(0xFFE0F2FE)
+val LiquidGlassLightPrimary = Color(0xFF0284C7)
+val LiquidGlassLightOnPrimary = Color(0xFFFFFFFF)
+val LiquidGlassLightPrimaryContainer = Color(0xFFBAE6FD)
+val LiquidGlassLightOnPrimaryContainer = Color(0xFF03446A)
+val LiquidGlassLightSecondary = Color(0xFF0D9488)
+val LiquidGlassLightOnSecondary = Color(0xFFFFFFFF)
+val LiquidGlassLightOnBackground = Color(0xFF082F49)
+val LiquidGlassLightOnSurface = Color(0xFF082F49)
+val LiquidGlassLightOnSurfaceVariant = Color(0xFF334155)
+val LiquidGlassLightOutline = Color(0xFF0284C7).copy(alpha = 0.3f)
+
+// 3. CLAYMORPHISM UI (Soft 3D tactile shapes, warm clay canvas, friendly accents)
+// Light Mode
 val ClaymorphismBackground = Color(0xFFF5F3EF)
 val ClaymorphismSurface = Color(0xFFEBE7DF)
 val ClaymorphismSurfaceVariant = Color(0xFFE0DBD0)
@@ -47,7 +80,23 @@ val ClaymorphismOnSurface = Color(0xFF2D3436)
 val ClaymorphismOnSurfaceVariant = Color(0xFF636E72)
 val ClaymorphismOutline = Color(0xFFC7BFB1)
 
+// Dark Mode
+val ClaymorphismDarkBackground = Color(0xFF1E1F29)
+val ClaymorphismDarkSurface = Color(0xFF282937)
+val ClaymorphismDarkSurfaceVariant = Color(0xFF343648)
+val ClaymorphismDarkPrimary = Color(0xFFA29BFE)
+val ClaymorphismDarkOnPrimary = Color(0xFF191040)
+val ClaymorphismDarkPrimaryContainer = Color(0xFF3D377A)
+val ClaymorphismDarkOnPrimaryContainer = Color(0xFFE2DFFD)
+val ClaymorphismDarkSecondary = Color(0xFF55EFC4)
+val ClaymorphismDarkOnSecondary = Color(0xFF003B2B)
+val ClaymorphismDarkOnBackground = Color(0xFFF5F6FA)
+val ClaymorphismDarkOnSurface = Color(0xFFF5F6FA)
+val ClaymorphismDarkOnSurfaceVariant = Color(0xFFB2BEC3)
+val ClaymorphismDarkOutline = Color(0xFF484B63)
+
 // 4. GLASSMORPHISM UI (Clean frosted translucent panels, crisp gradients, modern fintech)
+// Light Mode
 val GlassmorphismBackground = Color(0xFFF8FAFC)
 val GlassmorphismSurface = Color(0xFFFFFFFF)
 val GlassmorphismSurfaceVariant = Color(0xFFF1F5F9)
@@ -61,6 +110,21 @@ val GlassmorphismOnBackground = Color(0xFF0F172A)
 val GlassmorphismOnSurface = Color(0xFF1E293B)
 val GlassmorphismOnSurfaceVariant = Color(0xFF475569)
 val GlassmorphismOutline = Color(0xFFE2E8F0)
+
+// Dark Mode
+val GlassmorphismDarkBackground = Color(0xFF0B0F19)
+val GlassmorphismDarkSurface = Color(0xFF131B2E)
+val GlassmorphismDarkSurfaceVariant = Color(0xFF1E293B)
+val GlassmorphismDarkPrimary = Color(0xFF60A5FA)
+val GlassmorphismDarkOnPrimary = Color(0xFF082154)
+val GlassmorphismDarkPrimaryContainer = Color(0xFF1D4ED8)
+val GlassmorphismDarkOnPrimaryContainer = Color(0xFFDBEAFE)
+val GlassmorphismDarkSecondary = Color(0xFF2DD4BF)
+val GlassmorphismDarkOnSecondary = Color(0xFF042F2E)
+val GlassmorphismDarkOnBackground = Color(0xFFF8FAFC)
+val GlassmorphismDarkOnSurface = Color(0xFFF8FAFC)
+val GlassmorphismDarkOnSurfaceVariant = Color(0xFF94A3B8)
+val GlassmorphismDarkOutline = Color(0xFF334155)
 
 // Common Error Colors
 val ErrorRed = Color(0xFFEF4444)

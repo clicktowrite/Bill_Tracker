@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.billtracker.domain.model.DarkModePreference
 import com.example.billtracker.domain.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -17,6 +18,7 @@ class UserPreferencesRepository(private val context: Context) {
 
     private object PreferencesKeys {
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val DARK_MODE_PREFERENCE = stringPreferencesKey("dark_mode_preference")
         val CURRENCY_SYMBOL = stringPreferencesKey("currency_symbol")
         val RECORD_READING_TIME = booleanPreferencesKey("record_reading_time")
     }
@@ -24,6 +26,11 @@ class UserPreferencesRepository(private val context: Context) {
     val themeModeFlow: Flow<ThemeMode> = context.dataStore.data.map { preferences ->
         val name = preferences[PreferencesKeys.THEME_MODE]
         ThemeMode.fromString(name)
+    }
+
+    val darkModePreferenceFlow: Flow<DarkModePreference> = context.dataStore.data.map { preferences ->
+        val name = preferences[PreferencesKeys.DARK_MODE_PREFERENCE]
+        DarkModePreference.fromString(name)
     }
 
     val currencySymbolFlow: Flow<String> = context.dataStore.data.map { preferences ->
@@ -37,6 +44,12 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun setThemeMode(themeMode: ThemeMode) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.THEME_MODE] = themeMode.name
+        }
+    }
+
+    suspend fun setDarkModePreference(preference: DarkModePreference) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.DARK_MODE_PREFERENCE] = preference.name
         }
     }
 

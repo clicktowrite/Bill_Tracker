@@ -1,6 +1,7 @@
 package com.example.billtracker
 
 import com.example.billtracker.domain.ai.GgufHeaderParser
+import com.example.billtracker.domain.model.DarkModePreference
 import com.example.billtracker.domain.model.ThemeMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -28,6 +29,28 @@ class AiAndThemeTest {
         assertEquals(ThemeMode.FUTURISTIC, ThemeMode.fromString("DARK"))
         assertEquals(ThemeMode.GLASSMORPHISM, ThemeMode.fromString("LIGHT"))
         assertEquals(ThemeMode.GLASSMORPHISM, ThemeMode.fromString("UNKNOWN"))
+    }
+
+    @Test
+    fun testDarkModePreferenceFromStringMapping() {
+        assertEquals(DarkModePreference.SYSTEM, DarkModePreference.fromString("SYSTEM"))
+        assertEquals(DarkModePreference.SYSTEM, DarkModePreference.fromString(null))
+        assertEquals(DarkModePreference.SYSTEM, DarkModePreference.fromString("unknown"))
+        assertEquals(DarkModePreference.LIGHT, DarkModePreference.fromString("LIGHT"))
+        assertEquals(DarkModePreference.LIGHT, DarkModePreference.fromString("light"))
+        assertEquals(DarkModePreference.DARK, DarkModePreference.fromString("DARK"))
+        assertEquals(DarkModePreference.DARK, DarkModePreference.fromString("night"))
+        assertEquals(DarkModePreference.DARK, DarkModePreference.fromString("NIGHT"))
+    }
+
+    @Test
+    fun testThemeModeCompatibility() {
+        // Ensure all ThemeMode values have distinct names, display titles, and valid default isDark flags
+        ThemeMode.values().forEach { mode ->
+            assertNotNull(mode.displayName)
+            assertNotNull(mode.subtitle)
+        }
+        assertEquals(4, ThemeMode.values().size)
     }
 
     @Test

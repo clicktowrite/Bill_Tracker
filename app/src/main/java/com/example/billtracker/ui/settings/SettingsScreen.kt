@@ -65,8 +65,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.billtracker.BillTrackerApp
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.SettingsBrightness
 import com.example.billtracker.data.backup.BackupRestoreManager
 import com.example.billtracker.data.backup.BackupValidationResult
+import com.example.billtracker.domain.model.DarkModePreference
 import com.example.billtracker.domain.model.ThemeMode
 import kotlinx.coroutines.launch
 
@@ -75,10 +80,11 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     uiState: SettingsUiState,
     onThemeSelect: (ThemeMode) -> Unit,
-    onNavigateToAiModels: () -> Unit,
-    onNavigateToAiDocuments: () -> Unit,
-    onCurrencySelect: (String) -> Unit,
-    onRecordReadingTimeToggle: (Boolean) -> Unit
+    onDarkModeSelect: (DarkModePreference) -> Unit = {},
+    onNavigateToAiModels: () -> Unit = {},
+    onNavigateToAiDocuments: () -> Unit = {},
+    onCurrencySelect: (String) -> Unit = {},
+    onRecordReadingTimeToggle: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -148,13 +154,95 @@ fun SettingsScreen(
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
+                            imageVector = Icons.Default.SettingsBrightness,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.padding(4.dp))
+                        Text(
+                            text = "Appearance Mode",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Choose whether you prefer Light Mode, Night Mode, or following your Device System settings:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        DarkModePreference.values().forEach { pref ->
+                            val isPrefSelected = uiState.darkModePreference == pref
+                            Card(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { onDarkModeSelect(pref) },
+                                shape = MaterialTheme.shapes.medium,
+                                border = if (isPrefSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isPrefSelected)
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    else MaterialTheme.colorScheme.surfaceVariant
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .padding(vertical = 12.dp, horizontal = 6.dp)
+                                        .fillMaxWidth(),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Icon(
+                                        imageVector = when (pref) {
+                                            DarkModePreference.SYSTEM -> Icons.Default.SettingsBrightness
+                                            DarkModePreference.LIGHT -> Icons.Default.LightMode
+                                            DarkModePreference.DARK -> Icons.Default.DarkMode
+                                        },
+                                        contentDescription = null,
+                                        tint = if (isPrefSelected)
+                                            MaterialTheme.colorScheme.onPrimaryContainer
+                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = when (pref) {
+                                            DarkModePreference.SYSTEM -> "System"
+                                            DarkModePreference.LIGHT -> "Light"
+                                            DarkModePreference.DARK -> "Night"
+                                        },
+                                        textAlign = TextAlign.Center,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = if (isPrefSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isPrefSelected)
+                                            MaterialTheme.colorScheme.onPrimaryContainer
+                                        else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
                             imageVector = Icons.Default.Palette,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.padding(4.dp))
                         Text(
-                            text = "Appearance Theme",
+                            text = "Appearance Theme Style",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -169,11 +257,19 @@ fun SettingsScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
+                    val systemIsDark = isSystemInDarkTheme()
+                    val previewDark = when (uiState.darkModePreference) {
+                        DarkModePreference.SYSTEM -> systemIsDark
+                        DarkModePreference.LIGHT -> false
+                        DarkModePreference.DARK -> true
+                    }
+
                     ThemeMode.values().forEach { mode ->
                         val isSelected = uiState.themeMode == mode
                         ThemePreviewCard(
                             themeMode = mode,
                             isSelected = isSelected,
+                            isDarkTheme = previewDark,
                             onSelect = { onThemeSelect(mode) }
                         )
                         Spacer(modifier = Modifier.height(10.dp))
@@ -526,45 +622,94 @@ fun SettingsScreen(
 fun ThemePreviewCard(
     themeMode: ThemeMode,
     isSelected: Boolean,
+    isDarkTheme: Boolean = themeMode.isDark,
     onSelect: () -> Unit
 ) {
     val (cardBg, surfaceColor, primaryAccent, secondaryAccent, textColor, cardShape, borderStroke) = when (themeMode) {
-        ThemeMode.FUTURISTIC -> PreviewConfig(
-            background = Color(0xFF030712),
-            surface = Color(0xFF0B1329),
-            primary = Color(0xFF00F2FE),
-            secondary = Color(0xFF9D4EDD),
-            textColor = Color(0xFFF0F6FC),
-            shape = RoundedCornerShape(10.dp),
-            border = BorderStroke(1.5.dp, Color(0xFF00F2FE).copy(alpha = if (isSelected) 0.9f else 0.35f))
-        )
-        ThemeMode.LIQUID_GLASS -> PreviewConfig(
-            background = Color(0xFF050E17),
-            surface = Color(0xFF0F2338),
-            primary = Color(0xFF38BDF8),
-            secondary = Color(0xFF2DD4BF),
-            textColor = Color(0xFFE2E8F0),
-            shape = RoundedCornerShape(20.dp),
-            border = BorderStroke(1.5.dp, Color(0xFF38BDF8).copy(alpha = if (isSelected) 0.9f else 0.35f))
-        )
-        ThemeMode.CLAYMORPHISM -> PreviewConfig(
-            background = Color(0xFFF0EDF6),
-            surface = Color(0xFFFFFFFF),
-            primary = Color(0xFF6C5CE7),
-            secondary = Color(0xFF00B894),
-            textColor = Color(0xFF2D3436),
-            shape = RoundedCornerShape(26.dp),
-            border = BorderStroke(2.dp, if (isSelected) Color(0xFF6C5CE7) else Color(0xFFFFFFFF))
-        )
-        ThemeMode.GLASSMORPHISM -> PreviewConfig(
-            background = Color(0xFFF1F5F9),
-            surface = Color(0xFFFFFFFF),
-            primary = Color(0xFF2563EB),
-            secondary = Color(0xFF0D9488),
-            textColor = Color(0xFF0F172A),
-            shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(1.5.dp, if (isSelected) Color(0xFF2563EB) else Color(0xFFCBD5E1))
-        )
+        ThemeMode.FUTURISTIC -> if (isDarkTheme) {
+            PreviewConfig(
+                background = Color(0xFF030712),
+                surface = Color(0xFF0B1329),
+                primary = Color(0xFF00F2FE),
+                secondary = Color(0xFF9D4EDD),
+                textColor = Color(0xFFF0F6FC),
+                shape = RoundedCornerShape(10.dp),
+                border = BorderStroke(1.5.dp, Color(0xFF00F2FE).copy(alpha = if (isSelected) 0.9f else 0.35f))
+            )
+        } else {
+            PreviewConfig(
+                background = Color(0xFFF0F4F8),
+                surface = Color(0xFFFFFFFF),
+                primary = Color(0xFF007A87),
+                secondary = Color(0xFF7B1FA2),
+                textColor = Color(0xFF0F172A),
+                shape = RoundedCornerShape(10.dp),
+                border = BorderStroke(1.5.dp, Color(0xFF007A87).copy(alpha = if (isSelected) 0.9f else 0.35f))
+            )
+        }
+        ThemeMode.LIQUID_GLASS -> if (isDarkTheme) {
+            PreviewConfig(
+                background = Color(0xFF050E17),
+                surface = Color(0xFF0F2338),
+                primary = Color(0xFF38BDF8),
+                secondary = Color(0xFF2DD4BF),
+                textColor = Color(0xFFE2E8F0),
+                shape = RoundedCornerShape(20.dp),
+                border = BorderStroke(1.5.dp, Color(0xFF38BDF8).copy(alpha = if (isSelected) 0.9f else 0.35f))
+            )
+        } else {
+            PreviewConfig(
+                background = Color(0xFFF0F9FF),
+                surface = Color(0xFFFFFFFF),
+                primary = Color(0xFF0284C7),
+                secondary = Color(0xFF0D9488),
+                textColor = Color(0xFF082F49),
+                shape = RoundedCornerShape(20.dp),
+                border = BorderStroke(1.5.dp, Color(0xFF0284C7).copy(alpha = if (isSelected) 0.9f else 0.35f))
+            )
+        }
+        ThemeMode.CLAYMORPHISM -> if (isDarkTheme) {
+            PreviewConfig(
+                background = Color(0xFF1E1F29),
+                surface = Color(0xFF282937),
+                primary = Color(0xFFA29BFE),
+                secondary = Color(0xFF55EFC4),
+                textColor = Color(0xFFF5F6FA),
+                shape = RoundedCornerShape(26.dp),
+                border = BorderStroke(2.dp, if (isSelected) Color(0xFFA29BFE) else Color(0xFF343648))
+            )
+        } else {
+            PreviewConfig(
+                background = Color(0xFFF0EDF6),
+                surface = Color(0xFFFFFFFF),
+                primary = Color(0xFF6C5CE7),
+                secondary = Color(0xFF00B894),
+                textColor = Color(0xFF2D3436),
+                shape = RoundedCornerShape(26.dp),
+                border = BorderStroke(2.dp, if (isSelected) Color(0xFF6C5CE7) else Color(0xFFFFFFFF))
+            )
+        }
+        ThemeMode.GLASSMORPHISM -> if (isDarkTheme) {
+            PreviewConfig(
+                background = Color(0xFF0B0F19),
+                surface = Color(0xFF131B2E),
+                primary = Color(0xFF60A5FA),
+                secondary = Color(0xFF2DD4BF),
+                textColor = Color(0xFFF8FAFC),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.5.dp, if (isSelected) Color(0xFF60A5FA) else Color(0xFF334155))
+            )
+        } else {
+            PreviewConfig(
+                background = Color(0xFFF1F5F9),
+                surface = Color(0xFFFFFFFF),
+                primary = Color(0xFF2563EB),
+                secondary = Color(0xFF0D9488),
+                textColor = Color(0xFF0F172A),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.5.dp, if (isSelected) Color(0xFF2563EB) else Color(0xFFCBD5E1))
+            )
+        }
     }
 
     Card(
@@ -642,7 +787,7 @@ fun ThemePreviewCard(
                                 .background(secondaryAccent)
                         )
                         Text(
-                            text = if (themeMode.isDark) "Dark Mode" else "Light Mode",
+                            text = if (isDarkTheme) "Night Mode" else "Light Mode",
                             style = MaterialTheme.typography.labelSmall,
                             color = textColor.copy(alpha = 0.8f),
                             fontWeight = FontWeight.Medium
@@ -661,7 +806,7 @@ fun ThemePreviewCard(
                             text = if (isSelected) "Active" else "Apply Theme",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color = if (themeMode == ThemeMode.FUTURISTIC || themeMode == ThemeMode.LIQUID_GLASS) Color(0xFF030712) else Color.White
+                            color = if (isDarkTheme && (themeMode == ThemeMode.FUTURISTIC || themeMode == ThemeMode.LIQUID_GLASS)) Color(0xFF030712) else Color.White
                         )
                     }
                 }
