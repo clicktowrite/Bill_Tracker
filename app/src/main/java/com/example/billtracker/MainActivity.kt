@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
         val repository = app.repository
 
         setContent {
-            val themeMode by repository.themeModeFlow.collectAsState(initial = ThemeMode.CLEAN)
+            val themeMode by repository.themeModeFlow.collectAsState(initial = ThemeMode.GLASSMORPHISM)
 
             // Local AI Architecture (isolated from billing core)
             val modelManager = remember { GgufModelManager(applicationContext) }

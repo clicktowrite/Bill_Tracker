@@ -21,13 +21,13 @@ class AiAndThemeTest {
 
     @Test
     fun testThemeModeFromStringMapping() {
-        assertEquals(ThemeMode.MIDNIGHT, ThemeMode.fromString("MIDNIGHT"))
-        assertEquals(ThemeMode.GRAPHITE, ThemeMode.fromString("graphite"))
-        assertEquals(ThemeMode.CLEAN, ThemeMode.fromString("CLEAN"))
-        assertEquals(ThemeMode.WARM, ThemeMode.fromString("warm"))
-        assertEquals(ThemeMode.MIDNIGHT, ThemeMode.fromString("DARK"))
-        assertEquals(ThemeMode.CLEAN, ThemeMode.fromString("LIGHT"))
-        assertEquals(ThemeMode.CLEAN, ThemeMode.fromString("UNKNOWN"))
+        assertEquals(ThemeMode.FUTURISTIC, ThemeMode.fromString("FUTURISTIC"))
+        assertEquals(ThemeMode.LIQUID_GLASS, ThemeMode.fromString("liquid_glass"))
+        assertEquals(ThemeMode.CLAYMORPHISM, ThemeMode.fromString("CLAYMORPHISM"))
+        assertEquals(ThemeMode.GLASSMORPHISM, ThemeMode.fromString("glassmorphism"))
+        assertEquals(ThemeMode.FUTURISTIC, ThemeMode.fromString("DARK"))
+        assertEquals(ThemeMode.GLASSMORPHISM, ThemeMode.fromString("LIGHT"))
+        assertEquals(ThemeMode.GLASSMORPHISM, ThemeMode.fromString("UNKNOWN"))
     }
 
     @Test
