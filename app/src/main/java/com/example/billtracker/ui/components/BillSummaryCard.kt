@@ -31,6 +31,7 @@ import com.example.billtracker.domain.formatter.ReadingFormatter
 import com.example.billtracker.domain.model.MeterReading
 import com.example.billtracker.domain.model.UtilityType
 import com.example.billtracker.ui.theme.ElectricityYellow
+import com.example.billtracker.ui.theme.LocalThemeStyleConfig
 import com.example.billtracker.ui.theme.WaterBlue
 import java.io.File
 import java.text.SimpleDateFormat
@@ -51,10 +52,13 @@ fun BillSummaryCard(
     val badgeColor = if (isElectricity) ElectricityYellow else WaterBlue
     val dateFormatter = SimpleDateFormat("MMM dd, yyyy - hh:mm a", Locale.getDefault())
 
+    val styleConfig = LocalThemeStyleConfig.current
+
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = styleConfig.cardShape,
+        border = styleConfig.cardBorder,
+        elevation = CardDefaults.cardElevation(defaultElevation = styleConfig.elevationDp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
