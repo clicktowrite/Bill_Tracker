@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class SettingsUiState(
-    val themeMode: ThemeMode = ThemeMode.CLEAN,
+    val themeMode: ThemeMode = ThemeMode.GLASSMORPHISM,
     val currencySymbol: String = "₱",
     val recordReadingTime: Boolean = true
 )

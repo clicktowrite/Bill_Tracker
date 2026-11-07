@@ -20,12 +20,21 @@ import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,7 +44,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -49,6 +57,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -128,7 +139,7 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Theme Setting: 4 Selectable Themes (Midnight, Graphite, Clean, Warm)
+            // Theme Setting: 4 Distinct Modern UI Themes with Visual Preview Cards
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large,
@@ -149,97 +160,23 @@ fun SettingsScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Choose from 4 curated dark and light fintech themes:",
+                        text = "Choose from 4 distinct modern visual designs featuring unique shapes, color palettes, and container styles:",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                    // Dark Themes Section
-                    Text(
-                        text = "Dark Themes",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onThemeSelect(ThemeMode.MIDNIGHT) }
-                    ) {
-                        RadioButton(
-                            selected = uiState.themeMode == ThemeMode.MIDNIGHT,
-                            onClick = { onThemeSelect(ThemeMode.MIDNIGHT) }
+                    ThemeMode.values().forEach { mode ->
+                        val isSelected = uiState.themeMode == mode
+                        ThemePreviewCard(
+                            themeMode = mode,
+                            isSelected = isSelected,
+                            onSelect = { onThemeSelect(mode) }
                         )
-                        Column {
-                            Text("Midnight", fontWeight = FontWeight.SemiBold)
-                            Text("Deep navy background with blue accents", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onThemeSelect(ThemeMode.GRAPHITE) }
-                    ) {
-                        RadioButton(
-                            selected = uiState.themeMode == ThemeMode.GRAPHITE,
-                            onClick = { onThemeSelect(ThemeMode.GRAPHITE) }
-                        )
-                        Column {
-                            Text("Graphite", fontWeight = FontWeight.SemiBold)
-                            Text("Charcoal background with emerald accents", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Light Themes Section
-                    Text(
-                        text = "Light Themes",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onThemeSelect(ThemeMode.CLEAN) }
-                    ) {
-                        RadioButton(
-                            selected = uiState.themeMode == ThemeMode.CLEAN,
-                            onClick = { onThemeSelect(ThemeMode.CLEAN) }
-                        )
-                        Column {
-                            Text("Clean", fontWeight = FontWeight.SemiBold)
-                            Text("Crisp white background with soft blue accents", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onThemeSelect(ThemeMode.WARM) }
-                    ) {
-                        RadioButton(
-                            selected = uiState.themeMode == ThemeMode.WARM,
-                            onClick = { onThemeSelect(ThemeMode.WARM) }
-                        )
-                        Column {
-                            Text("Warm", fontWeight = FontWeight.SemiBold)
-                            Text("Warm off-white background with muted green accents", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                        Spacer(modifier = Modifier.height(10.dp))
                     }
                 }
             }
@@ -584,3 +521,161 @@ fun SettingsScreen(
         )
     }
 }
+
+@Composable
+fun ThemePreviewCard(
+    themeMode: ThemeMode,
+    isSelected: Boolean,
+    onSelect: () -> Unit
+) {
+    val (cardBg, surfaceColor, primaryAccent, secondaryAccent, textColor, cardShape, borderStroke) = when (themeMode) {
+        ThemeMode.FUTURISTIC -> PreviewConfig(
+            background = Color(0xFF030712),
+            surface = Color(0xFF0B1329),
+            primary = Color(0xFF00F2FE),
+            secondary = Color(0xFF9D4EDD),
+            textColor = Color(0xFFF0F6FC),
+            shape = RoundedCornerShape(10.dp),
+            border = BorderStroke(1.5.dp, Color(0xFF00F2FE).copy(alpha = if (isSelected) 0.9f else 0.35f))
+        )
+        ThemeMode.LIQUID_GLASS -> PreviewConfig(
+            background = Color(0xFF050E17),
+            surface = Color(0xFF0F2338),
+            primary = Color(0xFF38BDF8),
+            secondary = Color(0xFF2DD4BF),
+            textColor = Color(0xFFE2E8F0),
+            shape = RoundedCornerShape(20.dp),
+            border = BorderStroke(1.5.dp, Color(0xFF38BDF8).copy(alpha = if (isSelected) 0.9f else 0.35f))
+        )
+        ThemeMode.CLAYMORPHISM -> PreviewConfig(
+            background = Color(0xFFF0EDF6),
+            surface = Color(0xFFFFFFFF),
+            primary = Color(0xFF6C5CE7),
+            secondary = Color(0xFF00B894),
+            textColor = Color(0xFF2D3436),
+            shape = RoundedCornerShape(26.dp),
+            border = BorderStroke(2.dp, if (isSelected) Color(0xFF6C5CE7) else Color(0xFFFFFFFF))
+        )
+        ThemeMode.GLASSMORPHISM -> PreviewConfig(
+            background = Color(0xFFF1F5F9),
+            surface = Color(0xFFFFFFFF),
+            primary = Color(0xFF2563EB),
+            secondary = Color(0xFF0D9488),
+            textColor = Color(0xFF0F172A),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.5.dp, if (isSelected) Color(0xFF2563EB) else Color(0xFFCBD5E1))
+        )
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onSelect() },
+        shape = cardShape,
+        border = borderStroke,
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 1.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .background(cardBg)
+                .padding(14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = themeMode.displayName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = textColor
+                    )
+                    Text(
+                        text = themeMode.subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = textColor.copy(alpha = 0.75f)
+                    )
+                }
+
+                if (isSelected) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = "Active Theme",
+                        tint = primaryAccent,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Mini visual mockup preview of theme UI elements
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(cardShape)
+                    .background(surfaceColor)
+                    .padding(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Swatches
+                        Box(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clip(CircleShape)
+                                .background(primaryAccent)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clip(CircleShape)
+                                .background(secondaryAccent)
+                        )
+                        Text(
+                            text = if (themeMode.isDark) "Dark Mode" else "Light Mode",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = textColor.copy(alpha = 0.8f),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    // Mini preview button
+                    Box(
+                        modifier = Modifier
+                            .clip(cardShape)
+                            .background(primaryAccent)
+                            .clickable { onSelect() }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = if (isSelected) "Active" else "Apply Theme",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (themeMode == ThemeMode.FUTURISTIC || themeMode == ThemeMode.LIQUID_GLASS) Color(0xFF030712) else Color.White
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private data class PreviewConfig(
+    val background: Color,
+    val surface: Color,
+    val primary: Color,
+    val secondary: Color,
+    val textColor: Color,
+    val shape: androidx.compose.ui.graphics.Shape,
+    val border: BorderStroke
+)
